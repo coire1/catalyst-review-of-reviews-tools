@@ -1,5 +1,7 @@
-cache/
-gsheet-accounts/
+cache/*
+!cache/.gitkeep
+gsheet-accounts/*
+!gsheet-accounts/.gitkeep
 service_account.json
 __pycache__
 options.json
