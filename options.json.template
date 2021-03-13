@@ -1,0 +1,14 @@
+{
+  "accountEmail": "",
+  "gSheetAuthFile": "gsheet-accounts/service_account.json",
+  "assessmentsCacheFilename": "assessements",
+  "assessmentsSheet": "Proposals",
+  "proposalKeyColumn": "Idea Title",
+  "assessmentsIdColumn": "id",
+  "assessmentColumn": "Assessment Note",
+  "assessorColumn": "Assessor",
+  "proposerDocumentName": "Review of Reviews for Proposers",
+  "originalExportFromIdeascale": "",
+  "proposersFile": "",
+  "VCAMasterFileName": "vCA Master File Fund 3"
+}
