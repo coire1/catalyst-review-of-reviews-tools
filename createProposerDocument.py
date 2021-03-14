@@ -32,9 +32,11 @@ class CreateProposerDocument():
         cellsToAdd = []
         # Set headings
         headings = [
-            'Blank', 'Offense/Profanity', 'Score doesn\'t match',
-            'Copy', 'Wrong challenge', 'Wrong criteria', 'Other',
-            'Other rationale'
+            self.options.blankColumn, self.options.topQualityColumn,
+            self.options.profanityColumn, self.options.scoreColumn,
+            self.options.copyColumn, self.options.wrongChallengeColumn,
+            self.options.wrongCriteriaColumn, self.options.otherColumn,
+            self.options.otherRationaleColumn
         ]
         worksheet.add_cols(len(headings))
 
