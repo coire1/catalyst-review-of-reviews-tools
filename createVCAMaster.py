@@ -26,12 +26,13 @@ class CreateVCAMaster():
         # Set headings
         print('Set headings...')
         headings = [
-            'id', 'Offense/Profanity (Proposer)', 'Offense/Profanity (vCA)',
-            'Score doesn\'t match (Proposer)', 'Score doesn\'t match (vCA)',
-            'Copy (Proposer)', 'Copy (vCA)', 'Wrong challenge (Proposer)',
-            'Wrong challenge (vCA)', 'Wrong criteria (Proposer)',
-            'Wrong criteria (vCA)', 'Other (Proposer)', 'Other rationale (Proposer)',
-            'Other (vCA)', 'Other rationale (vCA)', 'Assessment', 'Assessor'
+            self.options.assessmentsIdColumn, self.options.ideaURLColumn,
+            self.options.assessorColumn, self.options.assessmentColumn,
+            self.options.proposerMarkColumn, self.options.fairColumn,
+            self.options.topQualityColumn, self.options.profanityColumn,
+            self.options.scoreColumn, self.options.copyColumn,
+            self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
+            self.options.otherColumn, self.options.otherRationaleColumn
         ]
 
         for i, value in enumerate(headings):
@@ -50,26 +51,54 @@ class CreateVCAMaster():
 
         print('Load proposers flagged reviews...')
         assessments = self.gspreadWrapper.getProposersData()
-        progressiveIndex = 2
+
+        # extract Assessors
+        assessors = self.gspreadWrapper.groupByAssessor(assessments)
+
+        # filter assessors with more than allowed blank reviews.
+        excludedAssessors = [k for k in assessors if (assessors[k]['blankPercentage'] >= self.options.allowedBlankPerAssessor)]
+        includedAssessors = [k for k in assessors if (assessors[k]['blankPercentage'] < self.options.allowedBlankPerAssessor)]
+
+        proposersDoc = self.gspreadWrapper.gc.open_by_key(self.options.proposersFile)
+        self.gspreadWrapper.createSheetFromGroup(
+            proposersDoc,
+            'Excluded CAs',
+            assessors,
+            excludedAssessors,
+            ['assessments']
+        )
+
+        self.gspreadWrapper.createSheetFromGroup(
+            proposersDoc,
+            'Included CAs',
+            assessors,
+            includedAssessors,
+            ['assessments']
+        )
+
+        # Add sheet for excluded/included assessors
+
+        index = 2
         print('Cloning flagged reviews...')
-        for note in assessments:
-            assessment = note[self.options.assessmentColumn].strip()
-            # Exclude blank assessments from vCA master file
-            if (assessment != ''):
+        for assessment in assessments:
+            if (assessment[self.options.assessorColumn] not in excludedAssessors):
+                marked = (
+                    (assessment[self.options.profanityColumn] == 'x') or
+                    (assessment[self.options.scoreColumn] == 'x') or
+                    (assessment[self.options.copyColumn] == 'x') or
+                    (assessment[self.options.wrongChallengeColumn] == 'x') or
+                    (assessment[self.options.wrongCriteriaColumn] == 'x') or
+                    (assessment[self.options.otherColumn] == 'x')
+                )
                 cellsToAdd.extend([
-                    Cell(row=progressiveIndex, col=1, value=note[self.options.assessmentsIdColumn]),
-                    Cell(row=progressiveIndex, col=2, value=note['Offense/Profanity']),
-                    Cell(row=progressiveIndex, col=4, value=note['Score doesn\'t match']),
-                    Cell(row=progressiveIndex, col=6, value=note['Copy']),
-                    Cell(row=progressiveIndex, col=8, value=note['Wrong challenge']),
-                    Cell(row=progressiveIndex, col=10, value=note['Wrong criteria']),
-                    Cell(row=progressiveIndex, col=12, value=note['Other']),
-                    Cell(row=progressiveIndex, col=13, value=note['Other rationale']),
-                    Cell(row=progressiveIndex, col=16, value=note[self.options.assessmentColumn]),
-                    Cell(row=progressiveIndex, col=17, value=note[self.options.assessorColumn]),
+                    Cell(row=index, col=1, value=assessment[self.options.assessmentsIdColumn]),
+                    Cell(row=index, col=2, value=assessment[self.options.ideaURLColumn]),
+                    Cell(row=index, col=3, value=assessment[self.options.assessorColumn]),
+                    Cell(row=index, col=4, value=assessment[self.options.assessmentColumn]),
+                    Cell(row=index, col=5, value=marked)
                 ])
 
-                progressiveIndex = progressiveIndex + 1
+                index = index + 1
         worksheet.update_cells(cellsToAdd, value_input_option='USER_ENTERED')
         print('Master Document for vCAs created')
         print('Link: {}'.format(spreadsheet.url))
