@@ -1,28 +1,6 @@
 import json
 
 class Utils():
-    def setColWidth(self, spreadsheet, worksheet, startIndex, endIndex, size):
-        sheetId = worksheet._properties['sheetId']
-        body = {
-            "requests": [
-                {
-                    "updateDimensionProperties": {
-                        "range": {
-                            "sheetId": sheetId,
-                            "dimension": "COLUMNS",
-                            "startIndex": startIndex,
-                            "endIndex": endIndex
-                        },
-                        "properties": {
-                            "pixelSize": size
-                        },
-                        "fields": "pixelSize"
-                    }
-                }
-            ]
-        }
-        res = spreadsheet.batch_update(body)
-
     '''
     saveCache() saves the pulled records in a json file to cache the response.
     '''

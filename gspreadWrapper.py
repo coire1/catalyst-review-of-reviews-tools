@@ -1,5 +1,6 @@
 import gspread
 from gspread.models import Cell
+from gspread_formatting import *
 from itertools import groupby
 
 from options import Options
@@ -76,6 +77,10 @@ class GspreadWrapper():
             headings = [x for x in headings if (x not in columnsBlacklist)]
             worksheet = spreadsheet.add_worksheet(title=title, rows=100, cols=len(headings) + 1)
             cellsToAdd = []
+
+            set_column_widths(worksheet, [
+                ('A', 110), ('B:J', 40)
+            ])
 
             for i, value in enumerate(headings):
                 cellsToAdd.append(

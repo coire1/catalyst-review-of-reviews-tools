@@ -3,6 +3,7 @@ from options import Options
 from utils import Utils
 
 from gspread.models import Cell
+from gspread_formatting import *
 
 class CreateProposerDocument():
     def __init__(self):
@@ -41,13 +42,9 @@ class CreateProposerDocument():
         worksheet.add_cols(len(headings))
 
         print('Set column width...')
-        self.utils.setColWidth(
-            spreadsheet,
-            worksheet,
-            currentColsCount,
-            currentColsCount + len(headings),
-            70
-        )
+        set_column_widths(worksheet, [
+            ('J:Q', 40), ('R', 200)
+        ])
 
         for i, value in enumerate(headings):
             cellsToAdd.append(
