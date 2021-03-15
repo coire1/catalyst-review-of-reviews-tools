@@ -11,6 +11,16 @@ class createVCAAggregate():
         self.utils = Utils()
         self.gspreadWrapper = GspreadWrapper()
 
+        self.infringementsColumns = [
+            self.options.profanityColumn, self.options.scoreColumn,
+            self.options.copyColumn, self.options.wrongChallengeColumn,
+            self.options.wrongCriteriaColumn, self.options.otherColumn
+        ]
+        self.positiveColumns = [
+            self.options.fairColumn, self.options.topQualityColumn
+        ]
+        self.feedbackColumns = self.infringementsColumns + self.positiveColumns
+
     def loadVCAsFiles(self):
         masterDocument = self.gspreadWrapper.gc.open_by_key(self.options.VCAMasterFile)
         masterSheet = masterDocument.worksheet("Assessments")
@@ -50,26 +60,20 @@ class createVCAAggregate():
             assessment[self.options.noVCAReviewsColumn] = 0
             assessment[self.options.fairColumn] = 0
             assessment[self.options.topQualityColumn] = 0
-            assessment[self.options.profanityColumn] = 0
-            assessment[self.options.scoreColumn] = 0
-            assessment[self.options.copyColumn] = 0
-            assessment[self.options.wrongChallengeColumn] = 0
-            assessment[self.options.wrongCriteriaColumn] = 0
-            assessment[self.options.otherColumn] = 0
+            for col in self.infringementsColumns:
+                assessment[col] = 0
             assessment[self.options.yellowCardColumn] = 0
             assessment[self.options.redCardColumn] = 0
 
             # Loop over all vca files
             for vcaFile in self.vcaData:
-                assessment[self.options.noVCAReviewsColumn] = assessment[self.options.noVCAReviewsColumn] + self.checkIfReviewed(vcaFile[id])
-                assessment[self.options.fairColumn] = assessment[self.options.fairColumn] + self.checkIfMarked(vcaFile[id], self.options.fairColumn)
-                assessment[self.options.topQualityColumn] = assessment[self.options.topQualityColumn] + self.checkIfMarked(vcaFile[id], self.options.topQualityColumn)
-                assessment[self.options.profanityColumn] = assessment[self.options.profanityColumn] + self.checkIfMarked(vcaFile[id], self.options.profanityColumn)
-                assessment[self.options.scoreColumn] = assessment[self.options.scoreColumn] + self.checkIfMarked(vcaFile[id], self.options.scoreColumn)
-                assessment[self.options.copyColumn] = assessment[self.options.copyColumn] + self.checkIfMarked(vcaFile[id], self.options.copyColumn)
-                assessment[self.options.wrongChallengeColumn] = assessment[self.options.wrongChallengeColumn] + self.checkIfMarked(vcaFile[id], self.options.wrongChallengeColumn)
-                assessment[self.options.wrongCriteriaColumn] = assessment[self.options.wrongCriteriaColumn] + self.checkIfMarked(vcaFile[id], self.options.wrongCriteriaColumn)
-                assessment[self.options.otherColumn] = assessment[self.options.otherColumn] + self.checkIfMarked(vcaFile[id], self.options.otherColumn)
+                fair = self.checkIfMarked(vcaFile[id], self.options.fairColumn)
+                if (self.isVCAfeedbackValid(fair, vcaFile[id])):
+                    assessment[self.options.noVCAReviewsColumn] = assessment[self.options.noVCAReviewsColumn] + self.checkIfReviewed(vcaFile[id])
+                    assessment[self.options.fairColumn] = assessment[self.options.fairColumn] + fair
+                    assessment[self.options.topQualityColumn] = assessment[self.options.topQualityColumn] + self.checkIfMarked(vcaFile[id], self.options.topQualityColumn)
+                    for col in self.infringementsColumns:
+                        assessment[col] = assessment[col] + self.checkIfMarked(vcaFile[id], col)
 
             (yellow, red) = self.calculateCards(assessment)
             assessment[self.options.yellowCardColumn] = yellow
@@ -111,16 +115,10 @@ class createVCAAggregate():
         print('Link: {}'.format(spreadsheet.url))
 
     def checkIfReviewed(self, row):
-        if (
-            (row[self.options.topQualityColumn] == 'x') or
-            (row[self.options.fairColumn] == 'x') or
-            (row[self.options.profanityColumn] == 'x') or
-            (row[self.options.scoreColumn] == 'x') or
-            (row[self.options.copyColumn] == 'x') or
-            (row[self.options.wrongChallengeColumn] == 'x') or
-            (row[self.options.wrongCriteriaColumn] == 'x') or
-            (row[self.options.otherColumn] == 'x')
-        ):
+        result = False
+        for col in self.feedbackColumns:
+            result = result or (row[col] == 'x')
+        if (result):
             return 1
         return 0
 
@@ -147,6 +145,14 @@ class createVCAAggregate():
             if ((row[self.options.otherColumn]/tot) >= self.options.otherLimit):
                 yellow = yellow + 1
         return (yellow, red)
+
+    def isVCAfeedbackValid(self, fairCount, row):
+        if (fairCount == 1):
+            for col in self.infringementsColumns:
+                if (self.checkIfMarked(row, col) > 0):
+                    return False
+        return True
+
 
     def filterAssessments(self, yellowAssessments, excludedAssessors):
         filtered = []
