@@ -60,13 +60,20 @@ class GspreadWrapper():
                 assessors[k]['total'] = len(assessments)
                 assessors[k]['profanity'] = self.countMarked(assessments, self.options.profanityColumn)
                 assessors[k]['blank'] = blankCount
-                assessors[k]['blankPercentage'] = (100 * blankCount) / len(assessments)
+                assessors[k]['blankPercentage'] = blankCount / len(assessments)
                 assessors[k]['score'] = self.countMarked(assessments, self.options.scoreColumn)
                 assessors[k]['copy'] = self.countMarked(assessments, self.options.copyColumn)
                 assessors[k]['wrongChallenge'] = self.countMarked(assessments, self.options.wrongChallengeColumn)
                 assessors[k]['wrongCriteria'] = self.countMarked(assessments, self.options.wrongCriteriaColumn)
                 assessors[k]['other'] = self.countMarked(assessments, self.options.otherColumn)
         return assessors
+
+    def groupById(self, data):
+        ids = {}
+        if (data):
+            for row in data:
+                ids[row[self.options.assessmentsIdColumn]] = row
+        return ids
 
     def createSheetFromGroup(self, spreadsheet, title, data, keysWhitelist, columnsBlacklist):
         # data is expected to be a dict of dict. A column for each dict key will
@@ -100,4 +107,31 @@ class GspreadWrapper():
                                 Cell(row=prIndex, col=(i + 1), value=value)
                             )
                     prIndex = prIndex + 1
+            worksheet.update_cells(cellsToAdd, value_input_option='USER_ENTERED')
+
+
+    def createSheetFromList(self, spreadsheet, title, data, columnsBlacklist):
+        # data is expected to be a list of dict. A column for each dict key will
+        # be created
+        if (data):
+            headings = list(data[0].keys())
+            # filtering out blacklisted keys
+            headings = [x for x in headings if (x not in columnsBlacklist)]
+            worksheet = spreadsheet.add_worksheet(title=title, rows=100, cols=len(headings) + 1)
+            cellsToAdd = []
+            for i, value in enumerate(headings):
+                cellsToAdd.append(
+                    Cell(row=1, col=(i + 1), value=value)
+                )
+
+            # Add aggregated counts to cells
+            prIndex = 2
+            for el in data:
+                for j, k in enumerate(el):
+                    v = el[k]
+                    cellsToAdd.append(
+                        Cell(row=prIndex, col=(j + 1), value=v)
+                    )
+                prIndex = prIndex + 1
+
             worksheet.update_cells(cellsToAdd, value_input_option='USER_ENTERED')
