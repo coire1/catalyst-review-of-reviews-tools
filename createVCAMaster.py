@@ -22,7 +22,7 @@ class CreateVCAMaster():
 
         print('Create sheet...')
         worksheet = spreadsheet.get_worksheet(0)
-        worksheet.update_title("Asessments")
+        worksheet.update_title("Assessments")
 
         cellsToAdd = []
         # Set headings
@@ -46,7 +46,7 @@ class CreateVCAMaster():
         print('Set column width...')
         set_column_widths(worksheet, [
             ('A', 40), ('B:C', 200), ('D', 40), ('E', 120), ('F', 400),
-            ('G:P', 30), ('Q', 300)
+            ('G:O', 30), ('P', 300)
         ])
 
         print('Format columns')
@@ -58,7 +58,7 @@ class CreateVCAMaster():
             horizontalAlignment='CENTER'
         )
         format_cell_ranges(worksheet, [
-            ('D:D', flagFormat), ('F:F', noteFormat), ('G:P', flagFormat)]
+            ('D:D', flagFormat), ('F:F', noteFormat), ('G:O', flagFormat)]
         )
 
         print('Load proposers flagged reviews...')
