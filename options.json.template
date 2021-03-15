@@ -1,6 +1,14 @@
 {
   "accountEmail": "",
   "gSheetAuthFile": "gsheet-accounts/service_account.json",
+  "allowedBlankPerAssessor": 0.1,
+  "profanityLimit": 0.5,
+  "scoreLimit": 0.5,
+  "copyLimit": 0.5,
+  "wrongChallengeLimit": 0.5,
+  "wrongCriteriaLimit": 0.5,
+  "otherLimit": 0.5,
+  "minimumVCA": 4,
   "assessmentsCacheFilename": "assessements",
   "assessmentsSheet": "Proposals",
   "proposalKeyColumn": "Idea Title",
@@ -23,8 +31,14 @@
   "wrongCriteriaColumn": "Wrong criteria",
   "otherColumn": "Other",
   "otherRationaleColumn": "Other: rationale",
+  "noVCAReviewsColumn": "# of vCAs Reviews",
+  "yellowCardColumn": "Yellow Card",
+  "redCardColumn": "Red Card",
   "proposerDocumentName": "Review of Reviews for Proposers",
   "originalExportFromIdeascale": "",
   "proposersFile": "",
-  "VCAMasterFileName": "vCA Master File Fund 3"
+  "VCAMasterFileName": "vCA Master File Fund 3",
+  "VCAMasterFile": "1qc4tCUDNmiTFmGYo6bgzBqzqu26DA4utbNTI_6EBMMI",
+  "VCAAggregateFileName": "vCA aggregated",
+  "VCAsFiles": []
 }
