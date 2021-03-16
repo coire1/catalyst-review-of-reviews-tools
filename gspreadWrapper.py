@@ -21,11 +21,17 @@ class GspreadWrapper():
         self.proposersDoc = self.gc.open_by_key(self.options.proposersFile)
         self.proposersSheet = self.proposersDoc.worksheet(self.options.assessmentsSheet)
         self.proposersData = self.proposersSheet.get_all_records()
+        proposalsWithIds = self.generateProposalsId(self.proposersData)
         for (i, data) in enumerate(self.proposersData):
             # Add id if not present. 2 Offset because Google Sheet starts from 1
             # and the first row is the table heading.
             if (self.options.assessmentsIdColumn not in data):
                 data[self.options.assessmentsIdColumn] = i + 2
+            if (self.options.tripletIdColumn not in data):
+                assessorId = data[self.options.assessorColumn].replace('z_assessor_', '')
+                proposalK = data[self.options.proposalKeyColumn]
+                proposalId = proposalsWithIds[proposalK]
+                data[self.options.tripletIdColumn] = "{}-{}".format(assessorId, proposalId)
         return self.proposersData
 
     def getAssessmentsData(self):
@@ -36,17 +42,34 @@ class GspreadWrapper():
                 self.assessmentsData = self.assessmentsSheet.get_all_records()
                 self.utils.saveCache(self.assessmentsData, cacheFn)
             # Loop over all records to assign a unique id
+            proposalsWithIds = self.generateProposalsId(self.assessmentsData)
             for (i, data) in enumerate(self.assessmentsData):
                 # Add id if not present. 2 Offset because Google Sheet starts from 1
                 # and the first row is the table heading.
                 if (self.options.assessmentsIdColumn not in data):
                     data[self.options.assessmentsIdColumn] = i + 2
+                if (self.options.tripletIdColumn not in data):
+                    assessorId = data[self.options.assessorColumn].replace('z_assessor_', '')
+                    proposalK = data[self.options.proposalKeyColumn]
+                    proposalId = proposalsWithIds[proposalK]
+                    data[self.options.tripletIdColumn] = "{}-{}".format(assessorId, proposalId)
             return self.assessmentsData
         return False
 
     def countMarked(self, data, column):
         count = sum(map(lambda rec: rec[column] == 'x', data))
         return count
+
+    def generateProposalsId(self, data):
+        proposals = {}
+        if (data):
+            sort = sorted(data, key=lambda rec: rec[self.options.proposalKeyColumn])
+            proposalId = 1
+            for k, v in groupby(sort, lambda rec: rec[self.options.proposalKeyColumn]):
+                proposals[k] = proposalId
+                proposalId = proposalId + 1
+
+        return proposals
 
     def groupByAssessor(self, data):
         assessors = {}
