@@ -33,6 +33,7 @@ class CreateProposerDocument():
         cellsToAdd = []
         # Set headings
         headings = [
+            self.options.assessmentsIdColumn, self.options.tripletIdColumn,
             self.options.blankColumn, self.options.topQualityColumn,
             self.options.profanityColumn, self.options.scoreColumn,
             self.options.copyColumn, self.options.wrongChallengeColumn,
@@ -43,7 +44,7 @@ class CreateProposerDocument():
 
         print('Set column width...')
         set_column_widths(worksheet, [
-            ('J:Q', 40), ('R', 200)
+            ('H:Q', 40), ('R', 200)
         ])
 
         for i, value in enumerate(headings):
@@ -55,9 +56,17 @@ class CreateProposerDocument():
         # Autofill blank assessments
         assessments = self.gspreadWrapper.getAssessmentsData()
         for note in assessments:
+            col = (currentColsCount + 1)
+            cellsToAdd.append(
+                Cell(row=note[self.options.assessmentsIdColumn], col=col, value=note[self.options.assessmentsIdColumn])
+            )
+            col = (currentColsCount + 2)
+            cellsToAdd.append(
+                Cell(row=note[self.options.assessmentsIdColumn], col=col, value=note[self.options.tripletIdColumn])
+            )
             assessment = note[self.options.assessmentColumn].strip()
             if (assessment == ''):
-                col = (currentColsCount + 1)
+                col = (currentColsCount + 3)
                 cellsToAdd.append(
                     Cell(row=note[self.options.assessmentsIdColumn], col=col, value='x')
                 )
