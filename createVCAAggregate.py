@@ -56,6 +56,7 @@ class createVCAAggregate():
         for id in self.masterDataByIds:
             assessment = {}
             assessment[self.options.assessmentsIdColumn] = id
+            assessment[self.options.tripletIdColumn] = self.masterDataByIds[id][self.options.tripletIdColumn]
             assessment[self.options.assessorColumn] = self.masterDataByIds[id][self.options.assessorColumn]
             assessment[self.options.noVCAReviewsColumn] = 0
             assessment[self.options.fairColumn] = 0
@@ -107,6 +108,13 @@ class createVCAAggregate():
             ]
         )
 
+        # Create sheet for invalid assessemnts (with reason)
+
+        # Create sheet with excluded assessors (merge excluded assessor for
+        # blank ratio + excluded assessors for red card)
+
+        # Append each VCA sheet to the current document.
+
         worksheet = spreadsheet.get_worksheet(0)
         spreadsheet.del_worksheet(worksheet)
 
@@ -156,17 +164,18 @@ class createVCAAggregate():
 
     def filterAssessments(self, yellowAssessments, excludedAssessors):
         filtered = []
-        yellowRelatedTripletsIds = self.getRelatedTriplets(yellowAssessments)
+        yellowRelatedTripletsIds = self.getTripletsIds(yellowAssessments)
         assessments = self.masterDataByIds
         for id in assessments:
-            if id not in yellowRelatedTripletsIds:
+            if assessments[id][self.options.tripletIdColumn] not in yellowRelatedTripletsIds:
                 if (assessments[id][self.options.assessorColumn] not in excludedAssessors):
                     filtered.append(assessments[id])
 
         return filtered
 
-    def getRelatedTriplets(self, yellowAssessments):
-        return []
+    def getTripletsIds(self, assessments):
+        tripletIds = [el[self.options.tripletIdColumn] for el in assessments]
+        return tripletIds
 
 
 
