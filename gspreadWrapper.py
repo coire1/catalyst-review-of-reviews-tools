@@ -1,10 +1,68 @@
 import gspread
 from gspread.models import Cell
 from gspread_formatting import *
+from gspread.utils import (
+    finditem,
+    fill_gaps
+)
 from itertools import groupby
 
 from options import Options
 from utils import Utils
+
+
+'''
+    Monkey patch to get merged cells values.
+'''
+
+def fix_merge_values(worksheet_metadata, values):
+    """Assign the top-left value to all cells in a merged range."""
+    for merge in worksheet_metadata.get("merges", []):
+        start_row, end_row = merge["startRowIndex"], merge["endRowIndex"]
+        start_col, end_col = (merge["startColumnIndex"], merge["endColumnIndex"])
+
+        # ignore merge cells outside the data range
+        if start_row < len(values) and start_col < len(values[0]):
+            orig_val = values[start_row][start_col]
+            for row in values[start_row:end_row]:
+                row[start_col:end_col] = [
+                    orig_val for i in range(start_col, end_col)
+                ]
+
+    return values
+
+def _get_all_values(self, value_render_option='FORMATTED_VALUE'):
+    """Returns a list of lists containing all cells' values as strings.
+    :param value_render_option: (optional) Determines how values should be
+                                rendered in the the output. See
+                                `ValueRenderOption`_ in the Sheets API.
+    :type value_render_option: str
+    .. _ValueRenderOption: https://developers.google.com/sheets/api/reference/rest/v4/ValueRenderOption
+    .. note::
+        Empty trailing rows and columns will not be included.
+    """
+    print('call monkey patch')
+    title = self.title.replace("'", "''")
+    data = self.spreadsheet.values_get(
+        "'{}'".format(title),
+        params={'valueRenderOption': value_render_option}
+    )
+    spreadsheet_meta = self.spreadsheet.fetch_sheet_metadata()
+
+    # not catching StopIteration becuase Worksheet exists
+    # potential issue if this Worksheet
+    worksheet_meta = finditem(
+        lambda x: x['properties']['title'] == self.title,
+        spreadsheet_meta['sheets']
+    )
+
+    try:
+        values = fill_gaps(data['values'])
+        return fix_merge_values(worksheet_meta, values)
+    except KeyError:
+        return []
+# Apply Monkey patch
+gspread.models.Worksheet.get_all_values = _get_all_values
 
 class GspreadWrapper():
     def __init__(self):
