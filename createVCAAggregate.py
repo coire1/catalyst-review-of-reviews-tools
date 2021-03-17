@@ -26,13 +26,18 @@ class createVCAAggregate():
         masterSheet = masterDocument.worksheet("Assessments")
         masterData = masterSheet.get_all_records()
         self.masterDataByIds = self.gspreadWrapper.groupById(masterData)
+        self.vcaRawData = []
         self.vcaData = []
+        self.vcaDocs = []
         for vcaFile in self.options.VCAsFiles:
             vcaDocument = self.gspreadWrapper.gc.open_by_key(vcaFile)
             vcaSheet = vcaDocument.worksheet("Assessments")
             data = vcaSheet.get_all_records()
             dataByIds = self.gspreadWrapper.groupById(data)
             self.vcaData.append(dataByIds)
+            self.vcaRawData.append(data)
+            self.vcaDocs.append(vcaDocument)
+
 
 
     def createDoc(self):
@@ -114,6 +119,13 @@ class createVCAAggregate():
         # blank ratio + excluded assessors for red card)
 
         # Append each VCA sheet to the current document.
+        for i, vcaRawData in enumerate(self.vcaRawData):
+            self.gspreadWrapper.createSheetFromList(
+                spreadsheet,
+                self.vcaDocs[i].title,
+                vcaRawData,
+                []
+            )
 
         worksheet = spreadsheet.get_worksheet(0)
         spreadsheet.del_worksheet(worksheet)

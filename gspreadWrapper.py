@@ -41,7 +41,6 @@ def _get_all_values(self, value_render_option='FORMATTED_VALUE'):
     .. note::
         Empty trailing rows and columns will not be included.
     """
-    print('call monkey patch')
     title = self.title.replace("'", "''")
     data = self.spreadsheet.values_get(
         "'{}'".format(title),
