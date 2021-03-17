@@ -28,14 +28,15 @@ class CreateVCAMaster():
         # Set headings
         print('Set headings...')
         headings = [
-            self.options.assessmentsIdColumn, self.options.ideaURLColumn,
-            self.options.questionColumn, self.options.ratingColumn,
-            self.options.assessorColumn, self.options.assessmentColumn,
-            self.options.proposerMarkColumn, self.options.fairColumn,
-            self.options.topQualityColumn, self.options.profanityColumn,
-            self.options.scoreColumn, self.options.copyColumn,
-            self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
-            self.options.otherColumn, self.options.otherRationaleColumn
+            self.options.assessmentsIdColumn, self.options.tripletIdColumn,
+            self.options.ideaURLColumn, self.options.questionColumn,
+            self.options.ratingColumn, self.options.assessorColumn,
+            self.options.assessmentColumn, self.options.proposerMarkColumn,
+            self.options.fairColumn, self.options.topQualityColumn,
+            self.options.profanityColumn, self.options.scoreColumn,
+            self.options.copyColumn, self.options.wrongChallengeColumn,
+            self.options.wrongCriteriaColumn, self.options.otherColumn,
+            self.options.otherRationaleColumn
         ]
 
         for i, value in enumerate(headings):
@@ -45,8 +46,8 @@ class CreateVCAMaster():
 
         print('Set column width...')
         set_column_widths(worksheet, [
-            ('A', 40), ('B:C', 200), ('D', 40), ('E', 120), ('F', 400),
-            ('G:O', 30), ('P', 300)
+            ('A:B', 40), ('C:D', 200), ('E', 40), ('F', 120), ('G', 400),
+            ('H:P', 30), ('Q', 300)
         ])
 
         print('Format columns')
@@ -58,7 +59,7 @@ class CreateVCAMaster():
             horizontalAlignment='CENTER'
         )
         format_cell_ranges(worksheet, [
-            ('D:D', flagFormat), ('F:F', noteFormat), ('G:O', flagFormat)]
+            ('E:E', flagFormat), ('G:G', noteFormat), ('H:P', flagFormat)]
         )
 
         print('Load proposers flagged reviews...')
@@ -104,12 +105,13 @@ class CreateVCAMaster():
                 ) else ''
                 cellsToAdd.extend([
                     Cell(row=index, col=1, value=assessment[self.options.assessmentsIdColumn]),
-                    Cell(row=index, col=2, value=assessment[self.options.ideaURLColumn]),
-                    Cell(row=index, col=3, value=assessment[self.options.questionColumn]),
-                    Cell(row=index, col=4, value=assessment[self.options.ratingColumn]),
-                    Cell(row=index, col=5, value=assessment[self.options.assessorColumn]),
-                    Cell(row=index, col=6, value=assessment[self.options.assessmentColumn]),
-                    Cell(row=index, col=7, value=marked)
+                    Cell(row=index, col=2, value=assessment[self.options.tripletIdColumn]),
+                    Cell(row=index, col=3, value=assessment[self.options.ideaURLColumn]),
+                    Cell(row=index, col=4, value=assessment[self.options.questionColumn]),
+                    Cell(row=index, col=5, value=assessment[self.options.ratingColumn]),
+                    Cell(row=index, col=6, value=assessment[self.options.assessorColumn]),
+                    Cell(row=index, col=7, value=assessment[self.options.assessmentColumn]),
+                    Cell(row=index, col=8, value=marked)
                 ])
 
                 index = index + 1
