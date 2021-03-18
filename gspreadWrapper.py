@@ -208,10 +208,11 @@ class GspreadWrapper():
             prIndex = 2
             for el in data:
                 for j, k in enumerate(el):
-                    v = el[k]
-                    cellsToAdd.append(
-                        Cell(row=prIndex, col=(j + 1), value=v)
-                    )
+                    if (k not in columnsBlacklist):
+                        v = el[k]
+                        cellsToAdd.append(
+                            Cell(row=prIndex, col=(j + 1), value=v)
+                        )
                 prIndex = prIndex + 1
 
             worksheet.update_cells(cellsToAdd, value_input_option='USER_ENTERED')
