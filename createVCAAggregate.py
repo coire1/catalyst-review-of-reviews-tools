@@ -21,6 +21,7 @@ class createVCAAggregate():
         ]
         self.feedbackColumns = self.infringementsColumns + self.positiveColumns
 
+
     def loadVCAsFiles(self):
         masterDocument = self.gspreadWrapper.gc.open_by_key(self.options.VCAMasterFile)
         masterSheet = masterDocument.worksheet("Assessments")
@@ -97,10 +98,17 @@ class createVCAAggregate():
             spreadsheet,
             'Aggregated',
             assessments,
-            []
+            [],
+            columnWidths=[('A:B', 70), ('C', 150), ('D:N', 40)],
+            formats=[
+                ('D:N', self.utils.counterFormat),
+                ('A1:C1', self.utils.headingFormat),
+                ('M2:M', self.utils.yellowFormat),
+                ('N2:N', self.utils.redFormat),
+                ('D1:N1', self.utils.verticalHeadingFormat)
+            ]
         )
 
-        print(validAssessments[0])
         self.gspreadWrapper.createSheetFromList(
             spreadsheet,
             'Valid Assessments',
@@ -112,7 +120,9 @@ class createVCAAggregate():
                 self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
                 self.options.otherColumn, self.options.otherRationaleColumn,
                 self.options.proposerMarkColumn
-            ]
+            ],
+            columnWidths=[('A:B', 50), ('C:D', 150), ('E', 80), ('F', 150), ('G', 400)],
+            formats=[('E', self.utils.counterFormat),('A1:G1', self.utils.headingFormat)]
         )
 
         # Create sheet for invalid assessemnts
@@ -127,7 +137,9 @@ class createVCAAggregate():
                 self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
                 self.options.otherColumn, self.options.otherRationaleColumn,
                 self.options.proposerMarkColumn
-            ]
+            ],
+            columnWidths=[('A:B', 50), ('C:D', 150), ('E', 80), ('F', 150), ('G', 400)],
+            formats=[('E', self.utils.counterFormat),('A1:G1', self.utils.headingFormat)]
         )
 
 
@@ -152,7 +164,9 @@ class createVCAAggregate():
             spreadsheet,
             'Excluded assessors',
             mergedExcludedAssessors,
-            []
+            [],
+            columnWidths=[('A', 150), ('B:D', 100)],
+            formats=[('B:C', self.utils.counterFormat), ('D', self.utils.percentageFormat), ('A1:D1', self.utils.headingFormat)]
         )
 
         # Append each VCA sheet to the current document.
@@ -161,7 +175,24 @@ class createVCAAggregate():
                 spreadsheet,
                 self.vcaDocs[i].title,
                 vcaRawData,
-                []
+                [],
+                columnWidths=[
+                    ('A', 40), ('B', 60), ('C:D', 200), ('E', 60), ('F', 120),
+                    ('G', 400), ('H:P', 30), ('Q', 300)
+                ],
+                formats=[
+                    ('E:E', self.utils.counterFormat),
+                    ('G:G', self.utils.noteFormat),
+                    ('H:P', self.utils.counterFormat),
+                    ('A1:D1', self.utils.headingFormat),
+                    ('F1:G1', self.utils.headingFormat),
+                    ('Q1', self.utils.headingFormat),
+                    ('E1', self.utils.verticalHeadingFormat),
+                    ('H1:P1', self.utils.verticalHeadingFormat),
+                    ('I2:J', self.utils.greenFormat),
+                    ('K2:K', self.utils.redFormat),
+                    ('L2:P', self.utils.yellowFormat),
+                ]
             )
 
         worksheet = spreadsheet.get_worksheet(0)

@@ -46,7 +46,7 @@ class CreateVCAMaster():
 
         print('Set column width...')
         set_column_widths(worksheet, [
-            ('A:B', 40), ('C:D', 200), ('E', 40), ('F', 120), ('G', 400),
+            ('A', 40), ('B', 60), ('C:D', 200), ('E', 60), ('F', 120), ('G', 400),
             ('H:P', 30), ('Q', 300)
         ])
 
@@ -59,8 +59,18 @@ class CreateVCAMaster():
             horizontalAlignment='CENTER'
         )
         format_cell_ranges(worksheet, [
-            ('E:E', flagFormat), ('G:G', noteFormat), ('H:P', flagFormat)]
-        )
+            ('E:E', self.utils.counterFormat),
+            ('G:G', self.utils.noteFormat),
+            ('H:P', self.utils.counterFormat),
+            ('A1:D1', self.utils.headingFormat),
+            ('F1:G1', self.utils.headingFormat),
+            ('Q1', self.utils.headingFormat),
+            ('E1', self.utils.verticalHeadingFormat),
+            ('H1:P1', self.utils.verticalHeadingFormat),
+            ('I2:J', self.utils.greenFormat),
+            ('K2:K', self.utils.redFormat),
+            ('L2:P', self.utils.yellowFormat),
+        ])
 
         print('Load proposers flagged reviews...')
         assessments = self.gspreadWrapper.getProposersData()
@@ -78,7 +88,17 @@ class CreateVCAMaster():
             'Excluded CAs',
             assessors,
             excludedAssessors,
-            ['assessments']
+            ['assessments'],
+            columnWidths=[('A', 150), ('B:J', 60)],
+            formats=[
+                ('B:J', self.utils.counterFormat),
+                ('A1:J1', self.utils.headingFormat),
+                ('B1:J1', self.utils.verticalHeadingFormat),
+                ('E2:E', self.utils.percentageFormat),
+                ('C2:C', self.utils.redFormat),
+                ('E2:E', self.utils.redFormat),
+                ('F2:J', self.utils.yellowFormat)
+            ]
         )
 
         self.gspreadWrapper.createSheetFromGroup(
@@ -86,7 +106,16 @@ class CreateVCAMaster():
             'Included CAs',
             assessors,
             includedAssessors,
-            ['assessments']
+            ['assessments'],
+            columnWidths=[('A', 150), ('B:J', 60)],
+            formats=[
+                ('B:J', self.utils.counterFormat),
+                ('A1:J1', self.utils.headingFormat),
+                ('B1:J1', self.utils.verticalHeadingFormat),
+                ('E2:E', self.utils.percentageFormat),
+                ('C2:C', self.utils.redFormat),
+                ('F2:J', self.utils.yellowFormat)
+            ]
         )
 
         # Add sheet for excluded/included assessors
@@ -116,6 +145,7 @@ class CreateVCAMaster():
 
                 index = index + 1
         worksheet.update_cells(cellsToAdd, value_input_option='USER_ENTERED')
+        worksheet.freeze(rows=1)
         print('Master Document for vCAs created')
         print('Link: {}'.format(spreadsheet.url))
 

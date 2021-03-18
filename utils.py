@@ -1,6 +1,47 @@
 import json
+from gspread_formatting import *
 
 class Utils():
+    def __init__(self):
+        # Global cells style
+        self.counterFormat = cellFormat(
+            textFormat=textFormat(bold=True),
+            horizontalAlignment='CENTER'
+        )
+        self.percentageFormat = cellFormat(
+            numberFormat=numberFormat(type='PERCENT', pattern="##.###%"),
+            horizontalAlignment='RIGHT'
+        )
+        self.noteFormat = cellFormat(
+            wrapStrategy='CLIP'
+        )
+        self.headingFormat = cellFormat(
+            backgroundColor=color(0.71, 0.85, 1),
+            textFormat=textFormat(bold=True),
+            horizontalAlignment='CENTER'
+        )
+        self.verticalHeadingFormat = cellFormat(
+            backgroundColor=color(0.71, 0.85, 1),
+            textFormat=textFormat(bold=True),
+            textRotation=textRotation(angle=90),
+            verticalAlignment='BOTTOM'
+        )
+        self.yellowFormat = cellFormat(
+            backgroundColor=color(1, 0.94, 0.58),
+            textFormat=textFormat(bold=True),
+            horizontalAlignment='CENTER'
+        )
+        self.redFormat = cellFormat(
+            backgroundColor=color(1, 0.58, 0.58),
+            textFormat=textFormat(bold=True),
+            horizontalAlignment='CENTER'
+        )
+        self.greenFormat = cellFormat(
+            backgroundColor=color(0.73, 1, 0.70),
+            textFormat=textFormat(bold=True),
+            horizontalAlignment='CENTER'
+        )
+
     '''
     saveCache() saves the pulled records in a json file to cache the response.
     '''

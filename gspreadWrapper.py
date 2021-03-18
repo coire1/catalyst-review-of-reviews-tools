@@ -155,7 +155,16 @@ class GspreadWrapper():
                 ids[row[self.options.assessmentsIdColumn]] = row
         return ids
 
-    def createSheetFromGroup(self, spreadsheet, title, data, keysWhitelist, columnsBlacklist):
+    def createSheetFromGroup(
+        self,
+        spreadsheet,
+        title,
+        data,
+        keysWhitelist,
+        columnsBlacklist,
+        columnWidths=False,
+        formats=False
+    ):
         # data is expected to be a dict of dict. A column for each dict key will
         # be created
         if (data):
@@ -165,9 +174,10 @@ class GspreadWrapper():
             worksheet = spreadsheet.add_worksheet(title=title, rows=100, cols=len(headings) + 1)
             cellsToAdd = []
 
-            set_column_widths(worksheet, [
-                ('A', 110), ('B:J', 40)
-            ])
+            if (columnWidths is not False):
+                set_column_widths(worksheet, columnWidths)
+            if (formats is not False):
+                format_cell_ranges(worksheet, formats)
 
             for i, value in enumerate(headings):
                 cellsToAdd.append(
@@ -188,9 +198,18 @@ class GspreadWrapper():
                             )
                     prIndex = prIndex + 1
             worksheet.update_cells(cellsToAdd, value_input_option='USER_ENTERED')
+            worksheet.freeze(rows=1)
 
 
-    def createSheetFromList(self, spreadsheet, title, data, columnsBlacklist):
+    def createSheetFromList(
+        self,
+        spreadsheet,
+        title,
+        data,
+        columnsBlacklist,
+        columnWidths=False,
+        formats=False
+    ):
         # data is expected to be a list of dict. A column for each dict key will
         # be created
         if (data):
@@ -198,6 +217,12 @@ class GspreadWrapper():
             # filtering out blacklisted keys
             headings = [x for x in headings if (x not in columnsBlacklist)]
             worksheet = spreadsheet.add_worksheet(title=title, rows=100, cols=len(headings) + 1)
+
+            if (columnWidths is not False):
+                set_column_widths(worksheet, columnWidths)
+            if (formats is not False):
+                format_cell_ranges(worksheet, formats)
+
             cellsToAdd = []
             for i, value in enumerate(headings):
                 cellsToAdd.append(
@@ -216,3 +241,4 @@ class GspreadWrapper():
                 prIndex = prIndex + 1
 
             worksheet.update_cells(cellsToAdd, value_input_option='USER_ENTERED')
+            worksheet.freeze(rows=1)

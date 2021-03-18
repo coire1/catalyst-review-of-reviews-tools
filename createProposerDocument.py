@@ -44,7 +44,7 @@ class CreateProposerDocument():
 
         print('Set column width...')
         set_column_widths(worksheet, [
-            ('H:Q', 40), ('R', 200)
+            ('H', 30), ('I', 60), ('J:Q', 30), ('R', 400)
         ])
 
         for i, value in enumerate(headings):
@@ -71,6 +71,18 @@ class CreateProposerDocument():
                     Cell(row=note[self.options.assessmentsIdColumn], col=col, value='x')
                 )
         worksheet.update_cells(cellsToAdd, value_input_option='USER_ENTERED')
+        worksheet.freeze(rows=1)
+
+        format_cell_ranges(worksheet, [
+            ('H:Q', self.utils.counterFormat),
+            ('A1:G1', self.utils.headingFormat),
+            ('R1', self.utils.headingFormat),
+            ('H1:Q1', self.utils.verticalHeadingFormat),
+            ('K2:K', self.utils.greenFormat),
+            ('L2:L', self.utils.redFormat),
+            ('M2:Q', self.utils.yellowFormat),
+
+        ])
         print('Document for proposers created')
         print('Link: {}'.format(spreadsheet.url))
 
