@@ -9,6 +9,10 @@ vCAs who are reviewing CA reviews in Fund 4.
 In Fund 4, as for Fund 3, this process is based on Google Sheet and these
 tools interact with it using `gspread`.
 
+## Disclaimer
+This is not the most elegant script collection in the world. It was just a quick
+a dirt development to get the tool ready for fund4.
+
 ## Process
 
 Steps of the process:
@@ -40,15 +44,31 @@ pip3 install -r requirements.txt
 Create a `Service Account` for Google APIs.
 
 1. Enable API Access for a Project if you haven’t done it yet.
-2. Go to “APIs & Services > Credentials” and choose “Create credentials > Service account key”.
-3. Fill out the form
-4. Click “Create” and “Done”.
-5. Press “Manage service accounts” above Service Accounts.
-6. Press on `⋮` near recenlty created service account and select “Create key”.
-7. Select JSON key type and press “Create”.
-8. Copy the downloaded json to `gsheet-accounts/service_account.json`
+2. Search for `Sheet` and `Drive` APIs and activate them.
+3. Go to “APIs & Services > Credentials” and choose “Create credentials > Service account key”.
+4. Fill out the form
+5. Click “Create” and “Done”.
+6. Press “Manage service accounts” above Service Accounts.
+7. Press on `⋮` near recenlty created service account and select “Create key”.
+8. Select JSON key type and press “Create”.
+9. Copy the downloaded json to `gsheet-accounts/service_account.json`
 
 Copy `options.json.template` to `options.json` and define your options.
+The first time you will not have all the documents id requested.
+Every script execution will create the next document that you have to add to the
+options file.
+
+1. You only have the `originalExportFromIdeascale` document.
+2. Run `createProposerDocument.py` -> it will create the document where
+proposers can flag assessments.
+3. Insert the id of the document just created in `proposersFile`.
+4. This is the proposers round. They can flag assessments in the document.
+5. When they have completed the process you can run `createVCAMaster.py` that
+will create the master file for VCAs.
+6. Each vCA makes their own copy of the master file and assigns red/yellow cards.
+7. Insert the VCA Master file id in `VCAMasterFile` options and every VCA copy
+of the file in `VCAsFiles` (as a list).
+8. Run `createVCAAggregate.py` to generate the final document.
 
 ### Other tools
 `serviceAccountUtils.py` is used to delete every document in the service account.
