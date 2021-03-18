@@ -91,7 +91,7 @@ class createVCAAggregate():
                 yellowAssessments.append(assessment)
             assessments.append(assessment)
 
-        validAssessments = self.filterAssessments(yellowAssessments, excludedAssessors)
+        validAssessments, excludedAssessments = self.filterAssessments(yellowAssessments, excludedAssessors)
 
         self.gspreadWrapper.createSheetFromList(
             spreadsheet,
@@ -100,6 +100,7 @@ class createVCAAggregate():
             []
         )
 
+        print(validAssessments[0])
         self.gspreadWrapper.createSheetFromList(
             spreadsheet,
             'Valid Assessments',
@@ -109,14 +110,50 @@ class createVCAAggregate():
                 self.options.topQualityColumn, self.options.profanityColumn,
                 self.options.scoreColumn, self.options.copyColumn,
                 self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
-                self.options.otherColumn, self.options.otherRationaleColumn
+                self.options.otherColumn, self.options.otherRationaleColumn,
+                self.options.proposerMarkColumn
             ]
         )
 
-        # Create sheet for invalid assessemnts (with reason)
+        # Create sheet for invalid assessemnts
+        self.gspreadWrapper.createSheetFromList(
+            spreadsheet,
+            'Excluded Assessments (r/y cards)',
+            excludedAssessments,
+            [
+                self.options.proposerMarkColumn, self.options.fairColumn,
+                self.options.topQualityColumn, self.options.profanityColumn,
+                self.options.scoreColumn, self.options.copyColumn,
+                self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
+                self.options.otherColumn, self.options.otherRationaleColumn,
+                self.options.proposerMarkColumn
+            ]
+        )
+
 
         # Create sheet with excluded assessors (merge excluded assessor for
         # blank ratio + excluded assessors for red card)
+        originalAssessments = self.gspreadWrapper.getProposersData()
+        originalAssessors = self.gspreadWrapper.groupByAssessor(originalAssessments)
+        blankExcludedAssessors = {}
+        blankIncludedAssessors = {}
+        for k in originalAssessors:
+            if (originalAssessors[k]['blankPercentage'] >= self.options.allowedBlankPerAssessor):
+                blankExcludedAssessors[k] = originalAssessors[k]
+            else:
+                blankIncludedAssessors[k] = originalAssessors[k]
+
+        mergedExcludedAssessors = self.mergeExcludedAssessors(
+            excludedAssessors,
+            blankExcludedAssessors,
+            blankIncludedAssessors
+        )
+        self.gspreadWrapper.createSheetFromList(
+            spreadsheet,
+            'Excluded assessors',
+            mergedExcludedAssessors,
+            []
+        )
 
         # Append each VCA sheet to the current document.
         for i, vcaRawData in enumerate(self.vcaRawData):
@@ -176,18 +213,41 @@ class createVCAAggregate():
 
     def filterAssessments(self, yellowAssessments, excludedAssessors):
         filtered = []
+        excluded = []
         yellowRelatedTripletsIds = self.getTripletsIds(yellowAssessments)
         assessments = self.masterDataByIds
         for id in assessments:
-            if assessments[id][self.options.tripletIdColumn] not in yellowRelatedTripletsIds:
-                if (assessments[id][self.options.assessorColumn] not in excludedAssessors):
-                    filtered.append(assessments[id])
+            if (
+                (assessments[id][self.options.tripletIdColumn] not in yellowRelatedTripletsIds) and
+                (assessments[id][self.options.assessorColumn] not in excludedAssessors)
+            ):
+                filtered.append(assessments[id])
+            else:
+                excluded.append(assessments[id])
 
-        return filtered
+        return filtered, excluded
 
     def getTripletsIds(self, assessments):
         tripletIds = [el[self.options.tripletIdColumn] for el in assessments]
         return tripletIds
+
+    def mergeExcludedAssessors(self, excludedByCard, excludedByBlank, includedByBlank):
+        assessors = []
+        for assessor in excludedByCard:
+            assessors.append({
+                'name': assessor,
+                'By Card': 1,
+                'By Blanks': '',
+                'Blank percentage': includedByBlank[assessor]['blankPercentage'],
+            })
+        for k in excludedByBlank:
+            assessors.append({
+                'name': k,
+                'By Card': '',
+                'By Blanks': 1,
+                'Blank percentage': excludedByBlank[k]['blankPercentage'],
+            })
+        return assessors
 
 
 
