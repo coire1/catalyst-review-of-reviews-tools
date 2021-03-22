@@ -125,12 +125,12 @@ class CreateVCAMaster():
         for assessment in assessments:
             if (assessment[self.options.assessorColumn] not in excludedAssessors):
                 marked = 'x' if (
-                    (assessment[self.options.profanityColumn] == 'x') or
-                    (assessment[self.options.scoreColumn] == 'x') or
-                    (assessment[self.options.copyColumn] == 'x') or
-                    (assessment[self.options.wrongChallengeColumn] == 'x') or
-                    (assessment[self.options.wrongCriteriaColumn] == 'x') or
-                    (assessment[self.options.otherColumn] == 'x')
+                    (assessment[self.options.profanityColumn].strip() != '') or
+                    (assessment[self.options.scoreColumn].strip() != '') or
+                    (assessment[self.options.copyColumn].strip() != '') or
+                    (assessment[self.options.wrongChallengeColumn].strip() != '') or
+                    (assessment[self.options.wrongCriteriaColumn].strip() != '') or
+                    ((assessment[self.options.otherColumn].strip() != '') and (assessment[self.options.otherRationaleColumn].strip() != ''))
                 ) else ''
                 cellsToAdd.extend([
                     Cell(row=index, col=1, value=assessment[self.options.assessmentsIdColumn]),

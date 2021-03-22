@@ -205,13 +205,13 @@ class createVCAAggregate():
     def checkIfReviewed(self, row):
         result = False
         for col in self.feedbackColumns:
-            result = result or (row[col] == 'x')
+            result = result or (row[col].strip() != '')
         if (result):
             return 1
         return 0
 
     def checkIfMarked(self, row, column):
-        if (row[column] == 'x'):
+        if (row[column].strip() != ''):
             return 1
         return 0
 
@@ -239,6 +239,12 @@ class createVCAAggregate():
             for col in self.infringementsColumns:
                 if (self.checkIfMarked(row, col) > 0):
                     return False
+        elif (
+            (self.checkIfMarked(row, self.options.otherColumn) == 1) and
+            (self.checkIfMarked(row, self.options.otherRationaleColumn) == 0)
+        ):
+            # Other flag is valid only if there is a rationale provided
+            return False
         return True
 
 

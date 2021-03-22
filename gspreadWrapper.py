@@ -114,7 +114,7 @@ class GspreadWrapper():
         return False
 
     def countMarked(self, data, column):
-        count = sum(map(lambda rec: rec[column] == 'x', data))
+        count = sum(map(lambda rec: rec[column].strip() != '', data))
         return count
 
     def generateProposalsId(self, data):
