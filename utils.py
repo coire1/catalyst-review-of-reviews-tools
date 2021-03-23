@@ -5,7 +5,7 @@ class Utils():
     def __init__(self):
         # Global cells style
         self.counterFormat = cellFormat(
-            textFormat=textFormat(bold=True),
+            textFormat=textFormat(bold=True, fontSize=10),
             horizontalAlignment='CENTER'
         )
         self.percentageFormat = cellFormat(
@@ -13,16 +13,20 @@ class Utils():
             horizontalAlignment='RIGHT'
         )
         self.noteFormat = cellFormat(
-            wrapStrategy='CLIP'
+            wrapStrategy='CLIP',
+            textFormat=textFormat(fontSize=10),
+        )
+        self.textFormat = cellFormat(
+            textFormat=textFormat(fontSize=10),
         )
         self.headingFormat = cellFormat(
             backgroundColor=color(0.71, 0.85, 1),
-            textFormat=textFormat(bold=True),
+            textFormat=textFormat(bold=True, fontSize=12),
             horizontalAlignment='CENTER'
         )
         self.verticalHeadingFormat = cellFormat(
             backgroundColor=color(0.71, 0.85, 1),
-            textFormat=textFormat(bold=True),
+            textFormat=textFormat(bold=True, fontSize=12),
             textRotation=textRotation(angle=90),
             verticalAlignment='BOTTOM'
         )
