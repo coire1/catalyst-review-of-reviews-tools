@@ -27,9 +27,12 @@ class CreateProposerDocument():
 
         worksheet = spreadsheet.worksheet(self.options.assessmentsSheet)
 
+        # Delete column for avg rating
+        worksheet.delete_columns(5)
+
         print('Setting headings for report...')
         # Add columns for y/r cards criteria
-        currentColsCount = worksheet.col_count
+        currentColsCount = worksheet.col_count - 1
         cellsToAdd = []
         # Set headings
         headings = [
@@ -44,7 +47,8 @@ class CreateProposerDocument():
 
         print('Set column width...')
         set_column_widths(worksheet, [
-            ('H', 30), ('I', 60), ('J:Q', 30), ('R', 400)
+            ('A:D', 150), ('E', 120), ('F', 400),
+            ('G', 60), ('H', 30), ('I', 60), ('J:Q', 30), ('R', 400)
         ])
 
         for i, value in enumerate(headings):
@@ -77,10 +81,11 @@ class CreateProposerDocument():
             ('H:Q', self.utils.counterFormat),
             ('A1:G1', self.utils.headingFormat),
             ('R1', self.utils.headingFormat),
-            ('H1:Q1', self.utils.verticalHeadingFormat),
+            ('G1:Q1', self.utils.verticalHeadingFormat),
             ('K2:K', self.utils.greenFormat),
             ('L2:L', self.utils.redFormat),
             ('M2:Q', self.utils.yellowFormat),
+            ('A2:G', self.utils.textFormat),
 
         ])
         print('Document for proposers created')
