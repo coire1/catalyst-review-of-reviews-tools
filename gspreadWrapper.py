@@ -94,10 +94,7 @@ class GspreadWrapper():
     def getAssessmentsData(self):
         if (self.assessmentsSheet):
             cacheFn = self.options.assessmentsCacheFilename
-            self.assessmentsData = self.utils.loadCache(cacheFn)
-            if (self.assessmentsData is False):
-                self.assessmentsData = self.assessmentsSheet.get_all_records()
-                self.utils.saveCache(self.assessmentsData, cacheFn)
+            self.assessmentsData = self.assessmentsSheet.get_all_records()
             # Loop over all records to assign a unique id
             proposalsWithIds = self.generateProposalsId(self.assessmentsData)
             for (i, data) in enumerate(self.assessmentsData):
