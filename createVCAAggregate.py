@@ -5,6 +5,8 @@ from utils import Utils
 from gspread.models import Cell
 from gspread_formatting import *
 
+from time import sleep
+
 class createVCAAggregate():
     def __init__(self):
         self.options = Options()
@@ -23,7 +25,8 @@ class createVCAAggregate():
 
 
     def loadVCAsFiles(self):
-        masterDocument = self.gspreadWrapper.gc.open_by_key(self.options.VCAMasterFile)
+        # masterDocument = self.gspreadWrapper.gc.open_by_key(self.options.VCAMasterFile)
+        masterDocument = self.gspreadWrapper.gc.open_by_key(self.options.proposersFile)
         masterSheet = masterDocument.worksheet("Assessments")
         masterData = masterSheet.get_all_records()
         self.masterDataByIds = self.gspreadWrapper.groupById(masterData)
@@ -31,6 +34,7 @@ class createVCAAggregate():
         self.vcaData = []
         self.vcaDocs = []
         for vcaFile in self.options.VCAsFiles:
+            print(vcaFile)
             vcaDocument = self.gspreadWrapper.gc.open_by_key(vcaFile)
             vcaSheet = vcaDocument.worksheet("Assessments")
             data = vcaSheet.get_all_records()
@@ -38,6 +42,7 @@ class createVCAAggregate():
             self.vcaData.append(dataByIds)
             self.vcaRawData.append(data)
             self.vcaDocs.append(vcaDocument)
+            sleep(35)
 
 
 
@@ -57,6 +62,7 @@ class createVCAAggregate():
         excludedAssessors = []
         validAssessments = []
         yellowAssessments = []
+        blankAssessments = []
         assessments = []
         # Loop over master ids as reference
         for id in self.masterDataByIds:
@@ -64,6 +70,7 @@ class createVCAAggregate():
             assessment[self.options.assessmentsIdColumn] = id
             assessment[self.options.tripletIdColumn] = self.masterDataByIds[id][self.options.tripletIdColumn]
             assessment[self.options.assessorColumn] = self.masterDataByIds[id][self.options.assessorColumn]
+            assessment[self.options.assessmentColumn] = self.masterDataByIds[id][self.options.assessmentColumn]
             assessment[self.options.noVCAReviewsColumn] = 0
             assessment[self.options.fairColumn] = 0
             assessment[self.options.topQualityColumn] = 0
@@ -74,13 +81,22 @@ class createVCAAggregate():
 
             # Loop over all vca files
             for vcaFile in self.vcaData:
-                fair = self.checkIfMarked(vcaFile[id], self.options.fairColumn)
-                if (self.isVCAfeedbackValid(fair, vcaFile[id])):
-                    assessment[self.options.noVCAReviewsColumn] = assessment[self.options.noVCAReviewsColumn] + self.checkIfReviewed(vcaFile[id])
-                    assessment[self.options.fairColumn] = assessment[self.options.fairColumn] + fair
-                    assessment[self.options.topQualityColumn] = assessment[self.options.topQualityColumn] + self.checkIfMarked(vcaFile[id], self.options.topQualityColumn)
-                    for col in self.infringementsColumns:
-                        assessment[col] = assessment[col] + self.checkIfMarked(vcaFile[id], col)
+                if (id in vcaFile):
+                    if (
+                        (vcaFile[id][self.options.tripletIdColumn] != assessment[self.options.tripletIdColumn]) or
+                        (vcaFile[id][self.options.assessorColumn] != assessment[self.options.assessorColumn])
+                    ):
+                        print("Something wrong with assessment {}".format(id))
+                        print(vcaFile[id])
+                        print(assessment)
+                        print('#####')
+                    fair = self.checkIfMarked(vcaFile[id], self.options.fairColumn)
+                    if (self.isVCAfeedbackValid(fair, vcaFile[id])):
+                        assessment[self.options.noVCAReviewsColumn] = assessment[self.options.noVCAReviewsColumn] + self.checkIfReviewed(vcaFile[id])
+                        assessment[self.options.fairColumn] = assessment[self.options.fairColumn] + fair
+                        assessment[self.options.topQualityColumn] = assessment[self.options.topQualityColumn] + self.checkIfMarked(vcaFile[id], self.options.topQualityColumn)
+                        for col in self.infringementsColumns:
+                            assessment[col] = assessment[col] + self.checkIfMarked(vcaFile[id], col)
 
             (yellow, red) = self.calculateCards(assessment)
             assessment[self.options.yellowCardColumn] = yellow
@@ -90,63 +106,17 @@ class createVCAAggregate():
                 excludedAssessors.append(assessment[self.options.assessorColumn])
             if (yellow >= 1):
                 yellowAssessments.append(assessment)
+            # TODO -> check if blank and exclude the whole triplet
+            #if (assessment[self.options.assessmentColumn].strip() == ''):
+            #    blankAssessments.append(assessment)
+
             assessments.append(assessment)
-
-        validAssessments, excludedAssessments = self.filterAssessments(yellowAssessments, excludedAssessors)
-
-        self.gspreadWrapper.createSheetFromList(
-            spreadsheet,
-            'Aggregated',
-            assessments,
-            [],
-            columnWidths=[('A:B', 70), ('C', 150), ('D:N', 40)],
-            formats=[
-                ('D:N', self.utils.counterFormat),
-                ('A1:C1', self.utils.headingFormat),
-                ('M2:M', self.utils.yellowFormat),
-                ('N2:N', self.utils.redFormat),
-                ('D1:N1', self.utils.verticalHeadingFormat)
-            ]
-        )
-
-        self.gspreadWrapper.createSheetFromList(
-            spreadsheet,
-            'Valid Assessments',
-            validAssessments,
-            [
-                self.options.proposerMarkColumn, self.options.fairColumn,
-                self.options.topQualityColumn, self.options.profanityColumn,
-                self.options.scoreColumn, self.options.copyColumn,
-                self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
-                self.options.otherColumn, self.options.otherRationaleColumn,
-                self.options.proposerMarkColumn
-            ],
-            columnWidths=[('A:B', 50), ('C:D', 150), ('E', 80), ('F', 150), ('G', 400)],
-            formats=[('E', self.utils.counterFormat),('A1:G1', self.utils.headingFormat)]
-        )
-
-        # Create sheet for invalid assessemnts
-        self.gspreadWrapper.createSheetFromList(
-            spreadsheet,
-            'Excluded Assessments (r/y cards)',
-            excludedAssessments,
-            [
-                self.options.proposerMarkColumn, self.options.fairColumn,
-                self.options.topQualityColumn, self.options.profanityColumn,
-                self.options.scoreColumn, self.options.copyColumn,
-                self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
-                self.options.otherColumn, self.options.otherRationaleColumn,
-                self.options.proposerMarkColumn
-            ],
-            columnWidths=[('A:B', 50), ('C:D', 150), ('E', 80), ('F', 150), ('G', 400)],
-            formats=[('E', self.utils.counterFormat),('A1:G1', self.utils.headingFormat)]
-        )
-
 
         # Create sheet with excluded assessors (merge excluded assessor for
         # blank ratio + excluded assessors for red card)
         originalAssessments = self.gspreadWrapper.getProposersData()
-        originalAssessors = self.gspreadWrapper.groupByAssessor(originalAssessments)
+        manualBlanksAssessors = self.gspreadWrapper.groupByAssessorBlank(self.options.manualDeletedAssessorsRecap)
+        originalAssessors = self.gspreadWrapper.groupByAssessor(originalAssessments, manualBlanksAssessors)
         blankExcludedAssessors = {}
         blankIncludedAssessors = {}
         for k in originalAssessors:
@@ -160,6 +130,67 @@ class createVCAAggregate():
             blankExcludedAssessors,
             blankIncludedAssessors
         )
+
+        validAssessments, excludedAssessments = self.filterAssessments(yellowAssessments, blankAssessments, excludedAssessors, blankExcludedAssessors)
+
+        self.gspreadWrapper.createSheetFromList(
+            spreadsheet,
+            'Aggregated',
+            assessments,
+            [],
+            columnWidths=[('A:B', 70), ('C', 150), ('D', 300), ('E:O', 40)],
+            formats=[
+                ('E:O', self.utils.counterFormat),
+                ('A1:D1', self.utils.headingFormat),
+                ('N2:N', self.utils.yellowFormat),
+                ('O2:O', self.utils.redFormat),
+                ('E1:O1', self.utils.verticalHeadingFormat)
+            ]
+        )
+
+        self.gspreadWrapper.createSheetFromList(
+            spreadsheet,
+            'Valid Assessments',
+            validAssessments,
+            [
+                self.options.proposerMarkColumn, self.options.fairColumn,
+                self.options.topQualityColumn, self.options.profanityColumn,
+                self.options.scoreColumn, self.options.copyColumn,
+                self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
+                self.options.otherColumn, self.options.otherRationaleColumn,
+                self.options.proposerMarkColumn, self.options.blankColumn
+            ],
+            columnWidths=[('G:I', 50), ('A:E', 150), ('F', 400)],
+            formats=[
+                ('G', self.utils.counterFormat),
+                ('A1:I1', self.utils.headingFormat),
+                ('G1:I1', self.utils.verticalHeadingFormat)
+
+            ]
+        )
+
+        # Create sheet for invalid assessemnts
+        self.gspreadWrapper.createSheetFromList(
+            spreadsheet,
+            'Excluded Assessments',
+            excludedAssessments,
+            [
+                self.options.proposerMarkColumn, self.options.fairColumn,
+                self.options.topQualityColumn, self.options.profanityColumn,
+                self.options.scoreColumn, self.options.copyColumn,
+                self.options.wrongChallengeColumn, self.options.wrongCriteriaColumn,
+                self.options.otherColumn, self.options.otherRationaleColumn,
+                self.options.proposerMarkColumn, self.options.blankColumn
+            ],
+            columnWidths=[('F:H', 50), ('A:D', 150), ('E', 400), ('I', 200)],
+            formats=[
+                ('F:H', self.utils.counterFormat),
+                ('A1:I1', self.utils.headingFormat),
+                ('F1:H1', self.utils.verticalHeadingFormat)
+            ]
+        )
+
+
         self.gspreadWrapper.createSheetFromList(
             spreadsheet,
             'Excluded assessors',
@@ -194,6 +225,7 @@ class createVCAAggregate():
                     ('L2:P', self.utils.yellowFormat),
                 ]
             )
+            sleep(35)
 
         worksheet = spreadsheet.get_worksheet(0)
         spreadsheet.del_worksheet(worksheet)
@@ -248,25 +280,53 @@ class createVCAAggregate():
         return True
 
 
-    def filterAssessments(self, yellowAssessments, excludedAssessors):
+    def filterAssessments(self, yellowAssessments, blankAssessments, excludedAssessors, blankExcludedAssessors):
         filtered = []
         excluded = []
         yellowRelatedTripletsIds = self.getTripletsIds(yellowAssessments)
+        yellowIds = self.getIds(yellowAssessments)
+        # blanksRelatedTripletsIds = self.getTripletsIds(blankAssessments)
         assessments = self.masterDataByIds
         for id in assessments:
-            if (
-                (assessments[id][self.options.tripletIdColumn] not in yellowRelatedTripletsIds) and
-                (assessments[id][self.options.assessorColumn] not in excludedAssessors)
-            ):
-                filtered.append(assessments[id])
+            cur = {
+                'Idea Title': assessments[id]['Idea Title'],
+                'Idea URL': assessments[id]['Idea URL'],
+                'Question': assessments[id]['Question'],
+                'Assessor': assessments[id]['Assessor'],
+                'Assessment Note': assessments[id]['Assessment Note'],
+                'Rating Given': assessments[id]['Rating Given'],
+                'id': assessments[id]['id'],
+                'triplet_id': assessments[id]['triplet_id'],
+                'reason': ''
+            }
+            if (assessments[id][self.options.assessorColumn] in excludedAssessors):
+                cur['reason'] = 'From red card assessor (profanity)'
+                excluded.append(cur)
+            elif (assessments[id][self.options.assessorColumn] in blankExcludedAssessors):
+                cur['reason'] = 'From red card assessor (blank)'
+                excluded.append(cur)
+            elif (assessments[id][self.options.assessmentColumn].strip() == ''):
+                cur['reason'] = 'Blank'
+                excluded.append(cur)
+            elif (assessments[id][self.options.assessmentsIdColumn] in yellowIds):
+                cur['reason'] = 'Yellow card'
+                excluded.append(cur)
+            #elif (assessments[id][self.options.tripletIdColumn] in yellowRelatedTripletsIds):
+            #    cur['reason'] = 'Yellow card in triplet'
+            #    excluded.append(cur)
+            #'''
             else:
-                excluded.append(assessments[id])
+                filtered.append(cur)
 
         return filtered, excluded
 
     def getTripletsIds(self, assessments):
         tripletIds = [el[self.options.tripletIdColumn] for el in assessments]
         return tripletIds
+
+    def getIds(self, assessments):
+        ids = [el[self.options.assessmentsIdColumn] for el in assessments]
+        return ids
 
     def mergeExcludedAssessors(self, excludedByCard, excludedByBlank, includedByBlank):
         assessors = []

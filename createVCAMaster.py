@@ -75,46 +75,48 @@ class CreateVCAMaster():
         print('Load proposers flagged reviews...')
         assessments = self.gspreadWrapper.getProposersData()
 
+        manualBlanksAssessors = self.gspreadWrapper.groupByAssessorBlank(self.options.manualDeletedAssessorsRecap)
+
         # extract Assessors
-        assessors = self.gspreadWrapper.groupByAssessor(assessments)
+        assessors = self.gspreadWrapper.groupByAssessor(assessments, manualBlanksAssessors)
+
 
         # filter assessors with more than allowed blank reviews.
         excludedAssessors = [k for k in assessors if (assessors[k]['blankPercentage'] >= self.options.allowedBlankPerAssessor)]
         includedAssessors = [k for k in assessors if (assessors[k]['blankPercentage'] < self.options.allowedBlankPerAssessor)]
 
-        proposersDoc = self.gspreadWrapper.gc.open_by_key(self.options.proposersFile)
         self.gspreadWrapper.createSheetFromGroup(
-            proposersDoc,
-            'Excluded CAs',
+            spreadsheet,
+            'Excluded CAs by Blanks',
             assessors,
             excludedAssessors,
             ['assessments'],
-            columnWidths=[('A', 150), ('B:J', 60)],
+            columnWidths=[('A', 150), ('B:K', 60)],
             formats=[
-                ('B:J', self.utils.counterFormat),
-                ('A1:J1', self.utils.headingFormat),
-                ('B1:J1', self.utils.verticalHeadingFormat),
-                ('E2:E', self.utils.percentageFormat),
+                ('B:K', self.utils.counterFormat),
+                ('A1:K1', self.utils.headingFormat),
+                ('B1:K1', self.utils.verticalHeadingFormat),
+                ('F2:F', self.utils.percentageFormat),
                 ('C2:C', self.utils.redFormat),
-                ('E2:E', self.utils.redFormat),
-                ('F2:J', self.utils.yellowFormat)
+                ('F2:F', self.utils.redFormat),
+                ('G2:K', self.utils.yellowFormat)
             ]
         )
 
         self.gspreadWrapper.createSheetFromGroup(
-            proposersDoc,
-            'Included CAs',
+            spreadsheet,
+            'Included CAs by Blanks',
             assessors,
             includedAssessors,
             ['assessments'],
-            columnWidths=[('A', 150), ('B:J', 60)],
+            columnWidths=[('A', 150), ('B:K', 60)],
             formats=[
-                ('B:J', self.utils.counterFormat),
-                ('A1:J1', self.utils.headingFormat),
-                ('B1:J1', self.utils.verticalHeadingFormat),
-                ('E2:E', self.utils.percentageFormat),
+                ('B:K', self.utils.counterFormat),
+                ('A1:K1', self.utils.headingFormat),
+                ('B1:K1', self.utils.verticalHeadingFormat),
+                ('F2:F', self.utils.percentageFormat),
                 ('C2:C', self.utils.redFormat),
-                ('F2:J', self.utils.yellowFormat)
+                ('G2:K', self.utils.yellowFormat)
             ]
         )
 

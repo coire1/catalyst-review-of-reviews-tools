@@ -125,19 +125,36 @@ class GspreadWrapper():
 
         return proposals
 
-    def groupByAssessor(self, data):
+
+    def groupByAssessorBlank(self, key):
+        manualRemovedRecapDoc = self.gc.open_by_key(key)
+        manualBlankAssessorsSheet = manualRemovedRecapDoc.worksheet('Assessors')
+        data = manualBlankAssessorsSheet.get_all_records()
+        assessors = {}
+        if (data):
+            for row in data:
+                assessors[row[self.options.assessorColumn]] = row['manualBlanks']
+        return assessors
+
+    def groupByAssessor(self, data, manualBlanksAssessors):
         assessors = {}
         if (data):
             sort = sorted(data, key=lambda rec: rec[self.options.assessorColumn])
             for k, assessments in groupby(sort, lambda rec: rec[self.options.assessorColumn]):
                 assessments = list(assessments)
                 blankCount = self.countMarked(assessments, self.options.blankColumn)
+                manualBlankCount = 0
+                if (k in manualBlanksAssessors):
+                    manualBlankCount = manualBlanksAssessors[k]
+                totalBlank = blankCount + manualBlankCount
+                total = len(assessments) + manualBlankCount
                 assessors[k] = {}
                 assessors[k]['assessments'] = assessments
-                assessors[k]['total'] = len(assessments)
+                assessors[k]['total'] = total
                 assessors[k]['profanity'] = self.countMarked(assessments, self.options.profanityColumn)
+                assessors[k]['manualBlanks'] = manualBlankCount
                 assessors[k]['blank'] = blankCount
-                assessors[k]['blankPercentage'] = blankCount / len(assessments)
+                assessors[k]['blankPercentage'] = totalBlank / total
                 assessors[k]['score'] = self.countMarked(assessments, self.options.scoreColumn)
                 assessors[k]['copy'] = self.countMarked(assessments, self.options.copyColumn)
                 assessors[k]['wrongChallenge'] = self.countMarked(assessments, self.options.wrongChallengeColumn)

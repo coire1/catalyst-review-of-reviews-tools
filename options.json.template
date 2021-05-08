@@ -35,10 +35,11 @@
   "yellowCardColumn": "Yellow Card",
   "redCardColumn": "Red Card",
   "proposerDocumentName": "Review of Reviews for Proposers",
+  "manualDeletedAssessorsRecap": "",
   "originalExportFromIdeascale": "",
   "proposersFile": "",
   "VCAMasterFileName": "vCA Master File Fund 3",
-  "VCAMasterFile": "1qc4tCUDNmiTFmGYo6bgzBqzqu26DA4utbNTI_6EBMMI",
+  "VCAMasterFile": "",
   "VCAAggregateFileName": "vCA aggregated",
   "VCAsFiles": []
 }
