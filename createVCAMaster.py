@@ -7,147 +7,106 @@ from gspread_formatting import *
 
 class CreateVCAMaster():
     def __init__(self):
-        self.options = Options()
+        self.opt = Options()
         self.utils = Utils()
         self.gspreadWrapper = GspreadWrapper()
 
     def createDoc(self):
-        print('Create new document...')
-        spreadsheet = self.gspreadWrapper.gc.create(self.options.VCAMasterFileName)
-        spreadsheet.share(
-            self.options.accountEmail,
-            perm_type='user',
-            role='writer'
-        )
+        spreadsheet = self.gspreadWrapper.createDoc(self.opt.VCAMasterFileName)
 
-        print('Create sheet...')
-        worksheet = spreadsheet.get_worksheet(0)
-        worksheet.update_title("Assessments")
-
-        cellsToAdd = []
-        # Set headings
-        print('Set headings...')
+        # Define headings for VCAMasterFile
+        print('Define headings...')
         headings = [
-            self.options.assessmentsIdColumn, self.options.tripletIdColumn,
-            self.options.ideaURLColumn, self.options.questionColumn,
-            self.options.ratingColumn, self.options.assessorColumn,
-            self.options.assessmentColumn, self.options.proposerMarkColumn,
-            self.options.fairColumn, self.options.topQualityColumn,
-            self.options.profanityColumn, self.options.scoreColumn,
-            self.options.copyColumn, self.options.wrongChallengeColumn,
-            self.options.wrongCriteriaColumn, self.options.otherColumn,
-            self.options.otherRationaleColumn
+            self.opt.assessmentsIdCol, self.opt.tripletIdCol, self.opt.ideaURLCol,
+            self.opt.proposalIdCol, self.opt.questionCol, self.opt.questionIdCol,
+            self.opt.ratingCol, self.opt.assessorCol, self.opt.assessmentCol,
+            self.opt.proposerMarkCol, self.opt.fairCol, self.opt.topQualityCol,
+            self.opt.abstainCol, self.opt.strictCol, self.opt.lenientCol,
+            self.opt.profanityCol, self.opt.nonConstructiveCol,
+            self.opt.scoreCol, self.opt.copyCol, self.opt.incompleteReadingCol,
+            self.opt.notRelatedCol, self.opt.otherCol, self.opt.otherRationaleCol
         ]
 
-        for i, value in enumerate(headings):
-            cellsToAdd.append(
-                Cell(row=1, col=(i + 1), value=value)
-            )
-
-        print('Set column width...')
-        set_column_widths(worksheet, [
-            ('A', 40), ('B', 60), ('C:D', 200), ('E', 60), ('F', 120), ('G', 400),
-            ('H:P', 30), ('Q', 300)
-        ])
-
-        print('Format columns')
-        noteFormat = cellFormat(
-            wrapStrategy='CLIP'
-        )
-        flagFormat = cellFormat(
-            textFormat=textFormat(bold=True),
-            horizontalAlignment='CENTER'
-        )
-        format_cell_ranges(worksheet, [
-            ('E:E', self.utils.counterFormat),
-            ('G:G', self.utils.noteFormat),
-            ('H:P', self.utils.counterFormat),
-            ('A1:D1', self.utils.headingFormat),
-            ('F1:G1', self.utils.headingFormat),
-            ('Q1', self.utils.headingFormat),
-            ('E1', self.utils.verticalHeadingFormat),
-            ('H1:P1', self.utils.verticalHeadingFormat),
-            ('I2:J', self.utils.greenFormat),
-            ('K2:K', self.utils.redFormat),
-            ('L2:P', self.utils.yellowFormat),
-        ])
-
         print('Load proposers flagged reviews...')
-        assessments = self.gspreadWrapper.getProposersData()
+        self.gspreadWrapper.getProposersData()
+        #self.gspreadWrapper.dfProposers.to_csv('test.csv')
 
-        manualBlanksAssessors = self.gspreadWrapper.groupByAssessorBlank(self.options.manualDeletedAssessorsRecap)
-
-        # extract Assessors
-        assessors = self.gspreadWrapper.groupByAssessor(assessments, manualBlanksAssessors)
-
-
-        # filter assessors with more than allowed blank reviews.
-        excludedAssessors = [k for k in assessors if (assessors[k]['blankPercentage'] >= self.options.allowedBlankPerAssessor)]
-        includedAssessors = [k for k in assessors if (assessors[k]['blankPercentage'] < self.options.allowedBlankPerAssessor)]
-
-        self.gspreadWrapper.createSheetFromGroup(
-            spreadsheet,
-            'Excluded CAs by Blanks',
-            assessors,
-            excludedAssessors,
-            ['assessments'],
-            columnWidths=[('A', 150), ('B:K', 60)],
-            formats=[
-                ('B:K', self.utils.counterFormat),
-                ('A1:K1', self.utils.headingFormat),
-                ('B1:K1', self.utils.verticalHeadingFormat),
-                ('F2:F', self.utils.percentageFormat),
-                ('C2:C', self.utils.redFormat),
-                ('F2:F', self.utils.redFormat),
-                ('G2:K', self.utils.yellowFormat)
-            ]
+        # Extract assessors
+        assessors = self.gspreadWrapper.dfProposers.groupby(
+            self.opt.assessorCol
+        ).agg(
+            total=(self.opt.assessmentCol, 'count'),
+            blanks=(self.opt.blankCol, (lambda x: (x == 'x').sum()))
         )
 
-        self.gspreadWrapper.createSheetFromGroup(
-            spreadsheet,
-            'Included CAs by Blanks',
-            assessors,
-            includedAssessors,
-            ['assessments'],
-            columnWidths=[('A', 150), ('B:K', 60)],
-            formats=[
-                ('B:K', self.utils.counterFormat),
-                ('A1:K1', self.utils.headingFormat),
-                ('B1:K1', self.utils.verticalHeadingFormat),
-                ('F2:F', self.utils.percentageFormat),
-                ('C2:C', self.utils.redFormat),
-                ('G2:K', self.utils.yellowFormat)
-            ]
+        # Calculate and extract assessors by blanks
+        assessors['blankPercentage'] = assessors['blanks'] / assessors['total']
+        assessors['excluded'] = (assessors['blankPercentage'] >= self.opt.allowedBlankPerAssessor)
+        excludedAssessors = assessors[(assessors['excluded'] == True)].index.tolist()
+        includedAssessors = assessors[(assessors['excluded'] != True)].index.tolist()
+
+        assessors['assessor'] = assessors.index
+
+        # Filter out assessments made by excluded assessors
+        validAssessments = self.gspreadWrapper.dfProposers[
+            self.gspreadWrapper.dfProposers[self.opt.assessorCol].isin(includedAssessors)
+        ]
+
+        # Filter out blank assessments
+        validAssessments = validAssessments[validAssessments[self.opt.blankCol] != 'x']
+
+        # Remove proposers marks
+        criteria = self.gspreadWrapper.infringementsColumns + [self.opt.topQualityCol, self.opt.otherRationaleCol]
+        for col in criteria:
+            validAssessments[col] = ''
+
+        # Assign 'x' for marks
+        validAssessments[self.opt.proposerMarkCol] = validAssessments[self.opt.proposerMarkCol].apply(
+            lambda r: 'x' if (r) else ''
         )
 
-        # Add sheet for excluded/included assessors
+        # Write sheet with assessments
+        assessmentsWidths = [
+            ('A', 40), ('B', 60), ('D', 40), ('E', 200), ('F', 40), ('G', 60), ('H', 120), ('I', 400),
+            ('J:V', 30), ('W', 300)
+        ]
+        assessmentsFormats = [
+            ('G:G', self.utils.counterFormat),
+            ('I:I', self.utils.noteFormat),
+            ('J:V', self.utils.counterFormat),
+            ('A1:W1', self.utils.headingFormat),
+            ('B1', self.utils.verticalHeadingFormat),
+            ('D1', self.utils.verticalHeadingFormat),
+            ('F1:G1', self.utils.verticalHeadingFormat),
+            ('J1:V1', self.utils.verticalHeadingFormat),
+            ('K2:L', self.utils.greenFormat),
+            ('P2:P', self.utils.redFormat),
+            ('Q2:V', self.utils.yellowFormat),
+        ]
 
-        index = 2
-        print('Cloning flagged reviews...')
-        for assessment in assessments:
-            if (assessment[self.options.assessorColumn] not in excludedAssessors):
-                marked = 'x' if (
-                    (assessment[self.options.profanityColumn].strip() != '') or
-                    (assessment[self.options.scoreColumn].strip() != '') or
-                    (assessment[self.options.copyColumn].strip() != '') or
-                    (assessment[self.options.wrongChallengeColumn].strip() != '') or
-                    (assessment[self.options.wrongCriteriaColumn].strip() != '') or
-                    ((assessment[self.options.otherColumn].strip() != '') and (assessment[self.options.otherRationaleColumn].strip() != ''))
-                ) else ''
-                cellsToAdd.extend([
-                    Cell(row=index, col=1, value=assessment[self.options.assessmentsIdColumn]),
-                    Cell(row=index, col=2, value=assessment[self.options.tripletIdColumn]),
-                    Cell(row=index, col=3, value=assessment[self.options.ideaURLColumn]),
-                    Cell(row=index, col=4, value=assessment[self.options.questionColumn]),
-                    Cell(row=index, col=5, value=assessment[self.options.ratingColumn]),
-                    Cell(row=index, col=6, value=assessment[self.options.assessorColumn]),
-                    Cell(row=index, col=7, value=assessment[self.options.assessmentColumn]),
-                    Cell(row=index, col=8, value=marked)
-                ])
+        self.gspreadWrapper.createSheetFromDf(
+            spreadsheet,
+            'Assessments',
+            validAssessments,
+            headings,
+            columnWidths=assessmentsWidths,
+            formats=assessmentsFormats
+        )
 
-                index = index + 1
-        worksheet.update_cells(cellsToAdd, value_input_option='USER_ENTERED')
-        worksheet.freeze(rows=1)
+        # Write sheet with CAs summary
+        self.gspreadWrapper.createSheetFromDf(
+            spreadsheet,
+            'Community Advisors',
+            assessors,
+            ['assessor', 'total', 'blanks', 'blankPercentage', 'excluded'],
+            columnWidths=[('A', 140), ('B:D', 60), ('E', 100)],
+            formats=[
+                ('B:C', self.utils.counterFormat),
+                ('D2:D', self.utils.percentageFormat),
+                ('A1:E1', self.utils.headingFormat),
+                ('B1:D1', self.utils.verticalHeadingFormat),
+            ]
+        )
         print('Master Document for vCAs created')
         print('Link: {}'.format(spreadsheet.url))
 
