@@ -15,7 +15,13 @@ class ServiceAccountUtils():
         for spreadsheet in self.gspreadWrapper.gc.openall():
             self.gspreadWrapper.gc.del_spreadsheet(spreadsheet.id)
 
+    def deleteList(self, l):
+        for id in l:
+            self.gspreadWrapper.gc.del_spreadsheet(id)
+
 sa = ServiceAccountUtils()
 sa.listAll()
-sa.deleteAll()
-sa.listAll()
+sa.deleteList([
+])
+#sa.deleteAll()
+#sa.listAll()
