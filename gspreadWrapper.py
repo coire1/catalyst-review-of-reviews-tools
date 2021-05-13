@@ -34,9 +34,9 @@ class GspreadWrapper():
             # Assign ids in new column
             self.df.insert(0, self.opt.assessmentsIdCol, self.df.index + 1)
             # Assign proposal ids
-            self.df[self.opt.proposalIdCol] = self.df.groupby(
-                self.opt.proposalKeyCol
-            ).ngroup()
+            #self.df[self.opt.proposalIdCol] = self.df.groupby(
+            #    self.opt.proposalKeyCol
+            #).ngroup()
             # Assign assessor_id
             self.df['assessor_id'] = self.df[self.opt.assessorCol].str.replace('z_assessor_', '')
             # Assign triplet_id
