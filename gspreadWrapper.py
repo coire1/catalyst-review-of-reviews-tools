@@ -50,6 +50,12 @@ class GspreadWrapper():
         self.dfProposers = pd.DataFrame(self.proposersSheet.get_all_records())
         self.dfProposers[self.opt.proposerMarkCol] = self.dfProposers.apply(self.checkMarks, axis=1)
 
+    def getVCAMasterData(self):
+        self.vcaDoc = self.gc.open_by_key(self.opt.VCAMasterFile)
+        self.vcaSheet = self.vcaDoc.worksheet(self.opt.assessmentsSheet)
+        self.dfVca = pd.DataFrame(self.vcaSheet.get_all_records())
+
+
     def checkMarks(self, row):
         res = False
         for col in self.infringementsColumns:
