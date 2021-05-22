@@ -45,6 +45,10 @@ class CreateVCAMaster():
         excludedAssessors = assessors[(assessors['excluded'] == True)].index.tolist()
         includedAssessors = assessors[(assessors['excluded'] != True)].index.tolist()
 
+        # Exclude assessors that are also proposers (get from options)
+        includedAssessors = [x for x in includedAssessors if (x not in self.opt.excludedCAProposers)]
+        excludedAssessors.extend(self.opt.excludedCAProposers)
+
         assessors['assessor'] = assessors.index
 
         # Filter out assessments made by excluded assessors
