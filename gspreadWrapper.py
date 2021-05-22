@@ -55,6 +55,11 @@ class GspreadWrapper():
         self.vcaSheet = self.vcaDoc.worksheet(self.opt.assessmentsSheet)
         self.dfVca = pd.DataFrame(self.vcaSheet.get_all_records())
 
+    def getVCAMasterAssessors(self):
+        self.vcaDoc = self.gc.open_by_key(self.opt.VCAMasterFile)
+        self.vcaSheet = self.vcaDoc.worksheet('Community Advisors')
+        self.dfVcaAssessors = pd.DataFrame(self.vcaSheet.get_all_records())
+
 
     def checkMarks(self, row):
         res = False
