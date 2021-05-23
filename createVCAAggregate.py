@@ -95,35 +95,179 @@ class createVCAAggregate():
 
         # Extract red card assessors and update List
         redCards = self.dfVca[self.dfVca[self.opt.redCardCol] > 0]
-        redCardsAssessors = list(redCards[self.opt.assessorCol].unique())
+        self.redCardsAssessors = list(redCards[self.opt.assessorCol].unique())
 
 
         # Select valid assessments (no red card assessors, no yellow card assessments, no blank assessments)
         validAssessments = self.dfVca[(
             (self.dfVca[self.opt.yellowCardCol] == 0) &
-            ~self.dfVca[self.opt.assessorCol].isin(redCardsAssessors)
+            ~self.dfVca[self.opt.assessorCol].isin(self.redCardsAssessors)
         )]
-        validAssessments.to_csv('valid.csv')
+        validAssessments[self.opt.assessmentsIdCol] = validAssessments.index
+        # generate Assessor Recap
+        assessors = self.assessorRecap()
+        # generate nonValidAssessment recap
+        nonValidAssessments = self.nonValidAssessments(validAssessments)
+
+        # Generate Doc
+        validAssessments.to_csv('cache/valid.csv')
+        nonValidAssessments.to_csv('cache/non-valid.csv')
+        assessors.to_csv('cache/assessors.csv')
+        spreadsheet = self.gspreadWrapper.createDoc(self.opt.VCAAggregateFileName)
 
         # Print valid assessments
+        assessmentsHeadings = [
+            self.opt.assessmentsIdCol, self.opt.tripletIdCol, self.opt.ideaURLCol,
+            self.opt.proposalIdCol, self.opt.questionCol, self.opt.questionIdCol,
+            self.opt.ratingCol, self.opt.assessorCol, self.opt.assessmentCol,
+            self.opt.proposerMarkCol, self.opt.fairCol, self.opt.topQualityCol,
+            self.opt.abstainCol, self.opt.strictCol, self.opt.lenientCol,
+            self.opt.profanityCol, self.opt.nonConstructiveCol,
+            self.opt.scoreCol, self.opt.copyCol, self.opt.incompleteReadingCol,
+            self.opt.notRelatedCol, self.opt.otherCol, self.opt.noVCAReviewsCol,
+            self.opt.yellowCardCol, self.opt.redCardCol
+        ]
+        assessmentsWidths = [
+            ('A', 40), ('B', 60), ('C', 120), ('D', 40), ('E', 200), ('F', 40), ('G', 60), ('H', 120), ('I', 400),
+            ('J:Y', 30)
+        ]
+        assessmentsFormats = [
+            ('G:G', self.utils.counterFormat),
+            ('I:I', self.utils.noteFormat),
+            ('J:Y', self.utils.counterFormat),
+            ('A1:W1', self.utils.headingFormat),
+            ('B1', self.utils.verticalHeadingFormat),
+            ('D1', self.utils.verticalHeadingFormat),
+            ('F1:G1', self.utils.verticalHeadingFormat),
+            ('J1:Y1', self.utils.verticalHeadingFormat),
+            ('K2:L', self.utils.greenFormat),
+            ('P2:P', self.utils.redFormat),
+            ('Q2:V', self.utils.yellowFormat),
+            ('X2:X', self.utils.yellowFormat),
+            ('Y2:Y', self.utils.redFormat),
+        ]
 
-        # Print non valid assessments -> reason, extract from proposer Doc
-        self.gspreadWrapper.getProposersData()
+        self.gspreadWrapper.createSheetFromDf(
+            spreadsheet,
+            'Valid Assessments',
+            validAssessments,
+            assessmentsHeadings,
+            columnWidths=assessmentsWidths,
+            formats=assessmentsFormats
+        )
 
         # Print assessors recap
 
-        self.assessorRecap(redCardsAssessors)
+        # Write sheet with CAs summary
+        self.gspreadWrapper.createSheetFromDf(
+            spreadsheet,
+            'Community Advisors',
+            assessors,
+            [
+                'assessor', 'total', 'blanks', 'blankPercentage', 'excluded',
+                'Yellow Card', 'Red Card', 'Constructive Feedback', 'note'
+            ],
+            columnWidths=[('A', 140), ('B:D', 60), ('E', 100), ('F:H', 40), ('I', 200)],
+            formats=[
+                ('B:C', self.utils.counterFormat),
+                ('F:H', self.utils.counterFormat),
+                ('D2:D', self.utils.percentageFormat),
+                ('A1:E1', self.utils.headingFormat),
+                ('B1:D1', self.utils.verticalHeadingFormat),
+                ('F1:H1', self.utils.verticalHeadingFormat),
+                ('F2:F', self.utils.yellowFormat),
+                ('G2:G', self.utils.redFormat),
+                ('H2:H', self.utils.greenFormat),
+            ]
+        )
+
+
+        # Print non valid assessments -> reason, extract from proposer Doc
+
+        nonAssessmentsHeadings = [
+            self.opt.assessmentsIdCol, self.opt.tripletIdCol, self.opt.ideaURLCol,
+            self.opt.proposalIdCol, self.opt.questionCol,
+            self.opt.ratingCol, self.opt.assessorCol, self.opt.assessmentCol,
+            self.opt.blankCol,
+            self.opt.proposerMarkCol, self.opt.fairCol, self.opt.topQualityCol,
+            self.opt.abstainCol, self.opt.strictCol, self.opt.lenientCol,
+            self.opt.profanityCol, self.opt.nonConstructiveCol,
+            self.opt.scoreCol, self.opt.copyCol, self.opt.incompleteReadingCol,
+            self.opt.notRelatedCol, self.opt.otherCol, self.opt.noVCAReviewsCol,
+            self.opt.yellowCardCol, self.opt.redCardCol, 'reason'
+        ]
+        nonAssessmentsWidths = [
+            ('A', 40), ('B', 60), ('C', 120), ('D', 40), ('E', 200), ('F', 40), ('G', 120), ('H', 400),
+            ('I:Y', 30), ('Z', 200)
+        ]
+        nonAssessmentsFormats = [
+            ('G:G', self.utils.counterFormat),
+            ('H:H', self.utils.noteFormat),
+            ('I:Y', self.utils.counterFormat),
+            ('A1:W1', self.utils.headingFormat),
+            ('B1', self.utils.verticalHeadingFormat),
+            ('D1', self.utils.verticalHeadingFormat),
+            ('F1:G1', self.utils.verticalHeadingFormat),
+            ('I1:Y1', self.utils.verticalHeadingFormat),
+            ('K2:L', self.utils.greenFormat),
+            ('P2:P', self.utils.redFormat),
+            ('Q2:V', self.utils.yellowFormat),
+            ('X2:X', self.utils.yellowFormat),
+            ('Y2:Y', self.utils.redFormat),
+        ]
+
+        self.gspreadWrapper.createSheetFromDf(
+            spreadsheet,
+            'Excluded Assessments',
+            nonValidAssessments,
+            nonAssessmentsHeadings,
+            columnWidths=nonAssessmentsWidths,
+            formats=nonAssessmentsFormats
+        )
 
         # Print vca recap
 
-        with pd.option_context('display.max_rows', None):
-            #toPrint = self.dfVca.loc[350:400]
-            toPrint = self.dfVca[self.dfVca["# of vCAs Reviews"] > 4]
-            print(toPrint[self.allColumns + [self.opt.noVCAReviewsCol, self.opt.yellowCardCol, self.opt.redCardCol]])
+        print('Aggregated Document created')
+        print('Link: {}'.format(spreadsheet.url))
 
-    def assessorRecap(self, redCardsAssessors):
-        self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'].isin(redCardsAssessors), 'excluded'] = True
-        self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'].isin(redCardsAssessors), 'note'] = "red card"
+    def nonValidAssessments(self, validAssessments):
+        self.gspreadWrapper.getProposersData()
+        dfProposers = self.gspreadWrapper.dfProposers.set_index('id')
+        dfProposers[self.opt.assessmentsIdCol] = dfProposers.index
+        for col in self.allColumns:
+            dfProposers[col] = ''
+        dfProposers[self.opt.proposerMarkCol] = ''
+        dfProposers[self.opt.otherRationaleCol] = ''
+        nonValidAssessments = dfProposers[~dfProposers[self.opt.assessmentsIdCol].isin(validAssessments.index)].copy()
+        for id, row in nonValidAssessments.iterrows():
+            if (id in self.dfVca.index):
+                for col in self.allColumns:
+                    nonValidAssessments.loc[id, col] = int(self.dfVca.loc[id, col])
+                nonValidAssessments.loc[id, self.opt.yellowCardCol] = int(self.dfVca.loc[id, self.opt.yellowCardCol])
+                nonValidAssessments.loc[id, self.opt.redCardCol] = int(self.dfVca.loc[id, self.opt.redCardCol])
+                nonValidAssessments.loc[id, self.opt.noVCAReviewsCol] = int(self.dfVca.loc[id, self.opt.noVCAReviewsCol])
+        nonValidAssessments['reason'] = nonValidAssessments.apply(self.describeReason, axis=1)
+        nonValidAssessments.fillna('', inplace=True)
+        return nonValidAssessments
+
+    def describeReason(self, row):
+        reason = []
+        if (row[self.opt.blankCol] == 'x'):
+            reason.append(self.opt.blankCol)
+        if (row['id'] in self.dfVca.index):
+            tot = row[self.opt.noVCAReviewsCol]
+            for col in self.infringementsColumns:
+                if (tot > 0):
+                    if ((row[col]/tot) >= self.opt.cardLimit):
+                        reason.append(col)
+        excludedAssessors = list(self.gspreadWrapper.dfVcaAssessors[self.gspreadWrapper.dfVcaAssessors['excluded'] == 'TRUE']['assessor'])
+        if (row[self.opt.assessorCol] in excludedAssessors):
+            reason.append('Assessor excluded')
+        return ', '.join(reason)
+
+    def assessorRecap(self):
+        self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'].isin(self.redCardsAssessors), 'excluded'] = 'TRUE'
+        self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'].isin(self.redCardsAssessors), 'note'] = "red card"
 
         # Extract assessors
         locAssessors = self.dfVca.groupby(
@@ -138,7 +282,8 @@ class createVCAAggregate():
             self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'] == id, self.opt.yellowCardCol] = row['yellow']
             self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'] == id, self.opt.topQualityCol] = row['constructiveFeedback']
 
-        self.gspreadWrapper.dfVcaAssessors.to_csv('assessors.csv')
+        self.gspreadWrapper.dfVcaAssessors.fillna('', inplace=True)
+        return self.gspreadWrapper.dfVcaAssessors
 
 
     def checkIntegrity(self, id, ass1, ass2):
