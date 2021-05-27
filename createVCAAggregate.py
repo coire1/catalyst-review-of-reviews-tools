@@ -57,7 +57,10 @@ class createVCAAggregate():
         for vcaFile in self.opt.VCAsFiles:
             print(vcaFile)
             vcaDocument = self.gspreadWrapper.gc.open_by_key(vcaFile)
-            vcaSheet = vcaDocument.worksheet("Assessments")
+            try:
+                vcaSheet = vcaDocument.worksheet("Assessments")
+            except:
+                vcaSheet = vcaDocument.get_worksheet(0)
             data = pd.DataFrame(vcaSheet.get_all_records())
             data.set_index('id', inplace=True)
             self.vcaData.append(data)
@@ -226,6 +229,17 @@ class createVCAAggregate():
         )
 
         # Print vca recap
+        allVcas = []
+        for vcaDoc in self.vcaDocs:
+            allVcas.append({'title': vcaDoc.title, 'link': vcaDoc.url})
+
+        allVcasDf = pd.DataFrame(allVcas)
+
+        self.gspreadWrapper.createSheetFromDf(
+            spreadsheet,
+            'Veteran Community Advisors',
+            allVcasDf
+        )
 
         print('Aggregated Document created')
         print('Link: {}'.format(spreadsheet.url))
