@@ -2,12 +2,7 @@
   "accountEmail": "",
   "gSheetAuthFile": "gsheet-accounts/service_account.json",
   "allowedBlankPerAssessor": 0.2,
-  "profanityLimit": 0.5,
-  "scoreLimit": 0.5,
-  "copyLimit": 0.5,
-  "wrongChallengeLimit": 0.5,
-  "wrongCriteriaLimit": 0.5,
-  "otherLimit": 0.5,
+  "cardLimit": 0.5,
   "minimumVCA": 4,
   "assessmentsCacheFilename": "assessements",
   "assessmentsSheet": "Assessments",
@@ -47,5 +42,8 @@
   "VCAMasterFileName": "vCA Master File - Fund 5",
   "VCAMasterFile": "",
   "VCAAggregateFileName": "vCA Aggregated - Fund 5",
-  "VCAsFiles": []
+  "VCAsFiles": [
+  ],
+  "excludedCAProposers": [
+  ]
 }
