@@ -50,6 +50,8 @@ class createVCAAggregate():
         self.gspreadWrapper.dfVcaAssessors[self.opt.yellowCardCol] = 0
         self.gspreadWrapper.dfVcaAssessors[self.opt.redCardCol] = 0
 
+        self.gspreadWrapper.getProposersData()
+
     def loadVCAsFiles(self):
         self.prepareBaseData()
         self.vcaData = []
@@ -107,6 +109,16 @@ class createVCAAggregate():
             ~self.dfVca[self.opt.assessorCol].isin(self.redCardsAssessors)
         )]
         validAssessments[self.opt.assessmentsIdCol] = validAssessments.index
+
+        # Add Proposal title (getting it from Proposer doc)
+        validAssessments[self.opt.proposalKeyCol] = validAssessments.apply(
+            lambda x: str(self.gspreadWrapper.dfProposers.loc[self.gspreadWrapper.dfProposers[self.opt.assessmentsIdCol] == x[self.opt.assessmentsIdCol], self.opt.proposalKeyCol].iloc[0]),
+            axis=1
+        )
+
+        # create group for final scores
+        finalProposals = validAssessments.groupby(self.opt.proposalKeyCol, as_index=False)[self.opt.ratingCol].mean()
+
         # generate Assessor Recap
         assessors = self.assessorRecap()
         # generate nonValidAssessment recap
@@ -120,7 +132,8 @@ class createVCAAggregate():
 
         # Print valid assessments
         assessmentsHeadings = [
-            self.opt.assessmentsIdCol, self.opt.tripletIdCol, self.opt.ideaURLCol,
+            self.opt.assessmentsIdCol, self.opt.tripletIdCol,
+            self.opt.proposalKeyCol, self.opt.ideaURLCol,
             self.opt.proposalIdCol, self.opt.questionCol, self.opt.questionIdCol,
             self.opt.ratingCol, self.opt.assessorCol, self.opt.assessmentCol,
             self.opt.proposerMarkCol, self.opt.fairCol, self.opt.topQualityCol,
@@ -131,23 +144,23 @@ class createVCAAggregate():
             self.opt.yellowCardCol, self.opt.redCardCol
         ]
         assessmentsWidths = [
-            ('A', 40), ('B', 60), ('C', 120), ('D', 40), ('E', 200), ('F', 40), ('G', 60), ('H', 120), ('I', 400),
-            ('J:Y', 30)
+            ('A', 40), ('B', 60), ('C', 120), ('D', 120), ('E', 40), ('F', 200), ('G', 40), ('H', 60), ('I', 120), ('J', 400),
+            ('K:Z', 30)
         ]
         assessmentsFormats = [
-            ('G:G', self.utils.counterFormat),
-            ('I:I', self.utils.noteFormat),
-            ('J:Y', self.utils.counterFormat),
-            ('A1:W1', self.utils.headingFormat),
+            ('H:H', self.utils.counterFormat),
+            ('J:J', self.utils.noteFormat),
+            ('K:Z', self.utils.counterFormat),
+            ('A1:X1', self.utils.headingFormat),
             ('B1', self.utils.verticalHeadingFormat),
-            ('D1', self.utils.verticalHeadingFormat),
-            ('F1:G1', self.utils.verticalHeadingFormat),
-            ('J1:Y1', self.utils.verticalHeadingFormat),
-            ('K2:L', self.utils.greenFormat),
-            ('P2:P', self.utils.redFormat),
-            ('Q2:V', self.utils.yellowFormat),
-            ('X2:X', self.utils.yellowFormat),
-            ('Y2:Y', self.utils.redFormat),
+            ('E1', self.utils.verticalHeadingFormat),
+            ('G1:H1', self.utils.verticalHeadingFormat),
+            ('K1:Z1', self.utils.verticalHeadingFormat),
+            ('L2:L', self.utils.greenFormat),
+            ('Q2:Q', self.utils.redFormat),
+            ('R2:W', self.utils.yellowFormat),
+            ('Y2:Y', self.utils.yellowFormat),
+            ('Z2:Z', self.utils.redFormat),
         ]
 
         self.gspreadWrapper.createSheetFromDf(
@@ -239,6 +252,26 @@ class createVCAAggregate():
             spreadsheet,
             'Veteran Community Advisors',
             allVcasDf
+        )
+
+
+        proposalsWidths = [
+            ('A', 300), ('B', 60)
+        ]
+        proposalsFormats = [
+            ('B:B', self.utils.counterFormat),
+            ('A:A', self.utils.noteFormat),
+            ('A1:B1', self.utils.headingFormat),
+            ('B1', self.utils.verticalHeadingFormat)
+        ]
+
+        self.gspreadWrapper.createSheetFromDf(
+            spreadsheet,
+            'Proposals',
+            finalProposals,
+            [self.opt.proposalKeyCol, self.opt.ratingCol],
+            columnWidths=proposalsWidths,
+            formats=proposalsFormats
         )
 
         print('Aggregated Document created')
