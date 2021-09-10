@@ -12,44 +12,55 @@ class CreateProposerDocument():
         self.gspreadWrapper = GspreadWrapper()
 
     def createDoc(self):
+        pd.options.display.max_columns = 100
         print('Loading original...')
         self.gspreadWrapper.loadAssessmentsFile()
         proposerDf = self.gspreadWrapper.prepareDataFromExport()
         spreadsheet = self.gspreadWrapper.createDoc(
             self.opt.proposerDocumentName
         )
-
         # Define all the columns needed in the file
         headings = [
-            self.opt.proposalKeyCol, self.opt.ideaURLCol, self.opt.questionCol,
-            self.opt.assessorCol, self.opt.assessmentCol, self.opt.ratingCol,
-            self.opt.assessmentsIdCol, self.opt.tripletIdCol, self.opt.proposalIdCol,
-            self.opt.blankCol, self.opt.topQualityCol, self.opt.profanityCol,
-            self.opt.nonConstructiveCol, self.opt.scoreCol, self.opt.copyCol,
-            self.opt.incompleteReadingCol, self.opt.notRelatedCol,
-            self.opt.otherCol, self.opt.otherRationaleCol
+            self.opt.proposalKeyCol, self.opt.ideaURLCol, self.opt.assessorCol,
+            self.opt.tripletIdCol, self.opt.proposalIdCol,
+            self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
+            self.opt.q2Col, self.opt.q2Rating, self.opt.blankCol,
+            self.opt.topQualityCol, self.opt.goodCol, self.opt.notValidCol,
+            self.opt.otherRationaleCol
         ]
 
         print('Assign blanks...')
         # Assign 'x' for blank assessments
-        proposerDf[self.opt.blankCol] = proposerDf[self.opt.assessmentCol].apply(
-            lambda r: 'x' if (r.strip() == "") else ''
-        )
+        proposerDf[self.opt.blankCol] = proposerDf.apply(
+            lambda r: 'x' if (
+                (str(r[self.opt.q0Col]).strip() == "") or
+                (str(r[self.opt.q1Col]).strip() == "") or
+                (str(r[self.opt.q2Col]).strip() == "")
+            ) else ''
+        , axis=1)
 
         print('Format columns...')
         widths = [
-            ('A:D', 150), ('E', 400),
-            ('F', 60),('G:R', 30), ('S', 400)
+            ('A:B', 150), ('C', 100), ('D:E', 40), ('F', 300), ('G', 30), ('H', 300), ('I', 30),
+            ('J', 300), ('K:O', 30), ('P', 300)
         ]
 
         formats = [
-            ('F:R', self.utils.counterFormat),
-            ('A1:S1', self.utils.headingFormat),
-            ('F1:R1', self.utils.verticalHeadingFormat),
-            ('K2:K', self.utils.greenFormat),
-            ('L2:L', self.utils.redFormat),
-            ('M2:R', self.utils.yellowFormat),
-            ('A2:E', self.utils.textFormat),
+            ('G', self.utils.counterFormat),
+            ('I', self.utils.counterFormat),
+            ('K', self.utils.counterFormat),
+            ('L', self.utils.counterFormat),
+            ('A1:P1', self.utils.headingFormat),
+            ('L1:O1', self.utils.verticalHeadingFormat),
+            ('G1', self.utils.verticalHeadingFormat),
+            ('I1', self.utils.verticalHeadingFormat),
+            ('K1', self.utils.verticalHeadingFormat),
+            ('M2:M', self.utils.greenFormat),
+            ('N2:N', self.utils.greenFormat),
+            ('O2:O', self.utils.redFormat),
+            ('F2:F', self.utils.textFormat),
+            ('H2:H', self.utils.textFormat),
+            ('J2:J', self.utils.textFormat),
         ]
 
         self.gspreadWrapper.createSheetFromDf(

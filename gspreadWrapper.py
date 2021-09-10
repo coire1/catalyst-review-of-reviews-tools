@@ -30,17 +30,34 @@ class GspreadWrapper():
 
     def prepareDataFromExport(self):
         if (self.assessmentsSheet):
-            self.df = pd.DataFrame(self.assessmentsSheet.get_all_records())
+            df = pd.DataFrame(self.assessmentsSheet.get_all_records())
             # Assign ids in new column
-            self.df.insert(0, self.opt.assessmentsIdCol, self.df.index + 1)
-            # Assign proposal ids
-            #self.df[self.opt.proposalIdCol] = self.df.groupby(
-            #    self.opt.proposalKeyCol
-            #).ngroup()
+            df.insert(0, self.opt.assessmentsIdCol, df.index + 1)
             # Assign assessor_id
-            self.df['assessor_id'] = self.df[self.opt.assessorCol].str.replace('z_assessor_', '')
+            df['assessor_id'] = df[self.opt.assessorCol].str.replace('z_assessor_', '')
             # Assign triplet_id
-            self.df[self.opt.tripletIdCol] = self.df['assessor_id'] + '-' + self.df[self.opt.proposalIdCol].astype(str)
+            df[self.opt.tripletIdCol] = df['assessor_id'] + '-' + df[self.opt.proposalIdCol].astype(str)
+            # Assign question_id
+            df[self.opt.questionIdCol] = df.groupby(self.opt.questionCol).ngroup() + 1
+            reviews = []
+            # Group assessments per triplet, to obtain the full review
+            grouped = df.groupby(self.opt.tripletIdCol)
+            for name, group in grouped:
+                for criteriaGroup in self.opt.criteriaGroups:
+                    filtered = group[group[self.opt.questionIdCol].isin(criteriaGroup)]
+                    if (len(filtered) > 0):
+                        # create a new review row, and add notes and ratings
+                        # accordingly
+                        row = filtered.iloc[0].to_dict()
+                        for idx, criteria in enumerate(criteriaGroup):
+                            single_filtered = group[group[self.opt.questionIdCol] == criteria]
+                            if (len(single_filtered) > 0):
+                                single = single_filtered.iloc[0].to_dict()
+                                row['q_' + str(idx) + '_note'] = single[self.opt.assessmentCol]
+                                row['q_' + str(idx) + '_rating'] = single[self.opt.ratingCol]
+                        reviews.append(row)
+            self.df = pd.DataFrame(reviews)
+            self.df.fillna('', inplace=True)
             return self.df
         return False
 
