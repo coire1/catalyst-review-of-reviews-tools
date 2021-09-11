@@ -25,8 +25,7 @@ class CreateProposerDocument():
             self.opt.tripletIdCol, self.opt.proposalIdCol,
             self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
             self.opt.q2Col, self.opt.q2Rating, self.opt.blankCol,
-            self.opt.topQualityCol, self.opt.goodCol, self.opt.notValidCol,
-            self.opt.otherRationaleCol
+            self.opt.notValidCol, self.opt.otherRationaleCol
         ]
 
         print('Assign blanks...')
@@ -42,7 +41,7 @@ class CreateProposerDocument():
         print('Format columns...')
         widths = [
             ('A:B', 150), ('C', 100), ('D:E', 40), ('F', 300), ('G', 30), ('H', 300), ('I', 30),
-            ('J', 300), ('K:O', 30), ('P', 300)
+            ('J', 300), ('K:M', 30), ('N', 300)
         ]
 
         formats = [
@@ -50,14 +49,12 @@ class CreateProposerDocument():
             ('I', self.utils.counterFormat),
             ('K', self.utils.counterFormat),
             ('L', self.utils.counterFormat),
-            ('A1:P1', self.utils.headingFormat),
-            ('L1:O1', self.utils.verticalHeadingFormat),
+            ('A1:N1', self.utils.headingFormat),
+            ('L1:N1', self.utils.verticalHeadingFormat),
             ('G1', self.utils.verticalHeadingFormat),
             ('I1', self.utils.verticalHeadingFormat),
             ('K1', self.utils.verticalHeadingFormat),
-            ('M2:M', self.utils.greenFormat),
-            ('N2:N', self.utils.greenFormat),
-            ('O2:O', self.utils.redFormat),
+            ('M2:M', self.utils.redFormat),
             ('F2:F', self.utils.textFormat),
             ('H2:H', self.utils.textFormat),
             ('J2:J', self.utils.textFormat),
