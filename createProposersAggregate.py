@@ -77,23 +77,24 @@ class createProposersAggregate():
             self.opt.proposerMarkCol, self.opt.proposersRationaleCol
         ]
         assessmentsWidths = [
-            ('A', 40), ('B', 60), ('C', 120), ('D', 120), ('E', 40), ('F', 200), ('G', 40), ('H', 60), ('I', 120), ('J', 400),
-            ('K:Z', 30)
+            ('A', 30), ('B:C', 150), ('D', 100), ('E:F', 40), ('G', 300),
+            ('H', 30), ('I', 300), ('J', 30), ('K', 300), ('L:N', 30),
+            ('O', 300)
         ]
         assessmentsFormats = [
-            ('H:H', self.utils.counterFormat),
-            ('J:J', self.utils.noteFormat),
-            ('K:Z', self.utils.counterFormat),
-            ('A1:X1', self.utils.headingFormat),
-            ('B1', self.utils.verticalHeadingFormat),
-            ('E1', self.utils.verticalHeadingFormat),
-            ('G1:H1', self.utils.verticalHeadingFormat),
-            ('K1:Z1', self.utils.verticalHeadingFormat),
-            ('L2:L', self.utils.greenFormat),
-            ('Q2:Q', self.utils.redFormat),
-            ('R2:W', self.utils.yellowFormat),
-            ('Y2:Y', self.utils.yellowFormat),
-            ('Z2:Z', self.utils.redFormat),
+            ('A', self.utils.counterFormat),
+            ('H', self.utils.counterFormat),
+            ('J', self.utils.counterFormat),
+            ('L', self.utils.counterFormat),
+            ('M', self.utils.counterFormat),
+            ('A1:O1', self.utils.headingFormat),
+            ('M1:N1', self.utils.verticalHeadingFormat),
+            ('H1', self.utils.verticalHeadingFormat),
+            ('J1', self.utils.verticalHeadingFormat),
+            ('L1', self.utils.verticalHeadingFormat),
+            ('G2:G', self.utils.textFormat),
+            ('I2:I', self.utils.textFormat),
+            ('K2:K', self.utils.textFormat),
         ]
 
         self.gspreadWrapper.createSheetFromDf(
@@ -101,8 +102,8 @@ class createProposersAggregate():
             'Assessments',
             self.dfMasterProposers,
             assessmentsHeadings,
-            #columnWidths=assessmentsWidths,
-            #formats=assessmentsFormats
+            columnWidths=assessmentsWidths,
+            formats=assessmentsFormats
         )
 
         print('Proposers Aggregated Document created')
