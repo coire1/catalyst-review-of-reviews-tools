@@ -5,3 +5,4 @@ gsheet-accounts/*
 service_account.json
 __pycache__
 options.json
+proposers-files/*

@@ -31,8 +31,6 @@ class GspreadWrapper():
     def prepareDataFromExport(self):
         if (self.assessmentsSheet):
             df = pd.DataFrame(self.assessmentsSheet.get_all_records())
-            # Assign ids in new column
-            df.insert(0, self.opt.assessmentsIdCol, df.index + 1)
             # Assign assessor_id
             df['assessor_id'] = df[self.opt.assessorCol].str.replace('z_assessor_', '')
             # Assign triplet_id
@@ -44,19 +42,22 @@ class GspreadWrapper():
             grouped = df.groupby(self.opt.tripletIdCol)
             for name, group in grouped:
                 for criteriaGroup in self.opt.criteriaGroups:
-                    filtered = group[group[self.opt.questionIdCol].isin(criteriaGroup)]
+                    criteriaIds = [int(i) for i in list(criteriaGroup.keys())]
+                    filtered = group[group[self.opt.questionIdCol].isin(criteriaIds)]
                     if (len(filtered) > 0):
                         # create a new review row, and add notes and ratings
                         # accordingly
                         row = filtered.iloc[0].to_dict()
-                        for idx, criteria in enumerate(criteriaGroup):
-                            single_filtered = group[group[self.opt.questionIdCol] == criteria]
+                        for idx in criteriaGroup:
+                            single_filtered = group[group[self.opt.questionIdCol] == int(idx)]
                             if (len(single_filtered) > 0):
                                 single = single_filtered.iloc[0].to_dict()
-                                row['q_' + str(idx) + '_note'] = single[self.opt.assessmentCol]
-                                row['q_' + str(idx) + '_rating'] = single[self.opt.ratingCol]
+                                row[criteriaGroup[idx] + ' Note'] = single[self.opt.assessmentCol]
+                                row[criteriaGroup[idx] + ' Rating'] = single[self.opt.ratingCol]
                         reviews.append(row)
             self.df = pd.DataFrame(reviews)
+            # Generate an unique index as a column
+            self.df.insert(0, self.opt.assessmentsIdCol, self.df.index + 1)
             self.df.fillna('', inplace=True)
             return self.df
         return False
@@ -67,10 +68,10 @@ class GspreadWrapper():
         self.dfProposers = pd.DataFrame(self.proposersSheet.get_all_records())
         self.dfProposers[self.opt.proposerMarkCol] = self.dfProposers.apply(self.checkMarks, axis=1)
 
-    def getVCAMasterData(self):
-        self.vcaDoc = self.gc.open_by_key(self.opt.VCAMasterFile)
-        self.vcaSheet = self.vcaDoc.worksheet(self.opt.assessmentsSheet)
-        self.dfVca = pd.DataFrame(self.vcaSheet.get_all_records())
+    def getProposersMasterData(self):
+        self.proposersMasterDoc = self.gc.open_by_key(self.opt.proposersMasterFile)
+        self.proposersSheet = self.proposersMasterDoc.worksheet(self.opt.assessmentsSheet)
+        self.dfMasterProposers = pd.DataFrame(self.proposersSheet.get_all_records())
 
     def getVCAMasterAssessors(self):
         self.vcaDoc = self.gc.open_by_key(self.opt.VCAMasterFile)

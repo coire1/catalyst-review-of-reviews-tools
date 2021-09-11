@@ -21,11 +21,12 @@ class CreateProposerDocument():
         )
         # Define all the columns needed in the file
         headings = [
+            self.opt.assessmentsIdCol,
             self.opt.proposalKeyCol, self.opt.ideaURLCol, self.opt.assessorCol,
             self.opt.tripletIdCol, self.opt.proposalIdCol,
             self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
             self.opt.q2Col, self.opt.q2Rating, self.opt.blankCol,
-            self.opt.notValidCol, self.opt.otherRationaleCol
+            self.opt.notValidCol, self.opt.notValidRationaleCol
         ]
 
         print('Assign blanks...')
@@ -40,24 +41,26 @@ class CreateProposerDocument():
 
         print('Format columns...')
         widths = [
-            ('A:B', 150), ('C', 100), ('D:E', 40), ('F', 300), ('G', 30), ('H', 300), ('I', 30),
-            ('J', 300), ('K:M', 30), ('N', 300)
+            ('A', 30), ('B:C', 150), ('D', 100), ('E:F', 40), ('G', 300),
+            ('H', 30), ('I', 300), ('J', 30), ('K', 300), ('L:N', 30),
+            ('O', 300)
         ]
 
         formats = [
-            ('G', self.utils.counterFormat),
-            ('I', self.utils.counterFormat),
-            ('K', self.utils.counterFormat),
+            ('A', self.utils.counterFormat),
+            ('H', self.utils.counterFormat),
+            ('J', self.utils.counterFormat),
             ('L', self.utils.counterFormat),
-            ('A1:N1', self.utils.headingFormat),
-            ('L1:N1', self.utils.verticalHeadingFormat),
-            ('G1', self.utils.verticalHeadingFormat),
-            ('I1', self.utils.verticalHeadingFormat),
-            ('K1', self.utils.verticalHeadingFormat),
-            ('M2:M', self.utils.redFormat),
-            ('F2:F', self.utils.textFormat),
-            ('H2:H', self.utils.textFormat),
-            ('J2:J', self.utils.textFormat),
+            ('M', self.utils.counterFormat),
+            ('A1:O1', self.utils.headingFormat),
+            ('M1:N1', self.utils.verticalHeadingFormat),
+            ('H1', self.utils.verticalHeadingFormat),
+            ('J1', self.utils.verticalHeadingFormat),
+            ('L1', self.utils.verticalHeadingFormat),
+            ('N2:N', self.utils.redFormat),
+            ('G2:G', self.utils.textFormat),
+            ('I2:I', self.utils.textFormat),
+            ('K2:K', self.utils.textFormat),
         ]
 
         self.gspreadWrapper.createSheetFromDf(
@@ -68,7 +71,7 @@ class CreateProposerDocument():
             widths,
             formats
         )
-        print('Document for proposers created')
+        print('Master Document for proposers created')
         print('Link: {}'.format(spreadsheet.url))
 
 c = CreateProposerDocument()
