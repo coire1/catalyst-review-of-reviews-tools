@@ -24,9 +24,8 @@ class CreateProposerDocument():
             if (user and proposal):
                 if (proposal["category"] in user["campaigns"]):
                     toExclude.append(ass)
-                    print(ass)
                 else:
-                    toInclude.append(row)
+                    toInclude.append(ass)
             else:
                 toInclude.append(ass)
         return pd.DataFrame(toInclude), pd.DataFrame(toExclude)
