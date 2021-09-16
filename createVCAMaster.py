@@ -17,25 +17,24 @@ class CreateVCAMaster():
         # Define headings for VCAMasterFile
         print('Define headings...')
         headings = [
-            self.opt.assessmentsIdCol, self.opt.tripletIdCol, self.opt.ideaURLCol,
-            self.opt.proposalIdCol, self.opt.questionCol, self.opt.questionIdCol,
-            self.opt.ratingCol, self.opt.assessorCol, self.opt.assessmentCol,
-            self.opt.proposerMarkCol, self.opt.fairCol, self.opt.topQualityCol,
-            self.opt.abstainCol, self.opt.strictCol, self.opt.lenientCol,
-            self.opt.profanityCol, self.opt.nonConstructiveCol,
-            self.opt.scoreCol, self.opt.copyCol, self.opt.incompleteReadingCol,
-            self.opt.notRelatedCol, self.opt.otherCol, self.opt.otherRationaleCol
+            self.opt.assessmentsIdCol,
+            self.opt.proposalKeyCol, self.opt.ideaURLCol, self.opt.assessorCol,
+            self.opt.tripletIdCol, self.opt.proposalIdCol,
+            self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
+            self.opt.q2Col, self.opt.q2Rating, self.opt.proposerMarkCol,
+            self.opt.proposersRationaleCol, self.opt.excellentCol,
+            self.opt.goodCol, self.opt.notValidCol
         ]
 
         print('Load proposers flagged reviews...')
-        self.gspreadWrapper.getProposersData()
+        self.gspreadWrapper.getProposersAggregatedData()
         #self.gspreadWrapper.dfProposers.to_csv('test.csv')
 
         # Extract assessors
         assessors = self.gspreadWrapper.dfProposers.groupby(
             self.opt.assessorCol
         ).agg(
-            total=(self.opt.assessmentCol, 'count'),
+            total=(self.opt.tripletIdCol, 'count'),
             blanks=(self.opt.blankCol, (lambda x: (x == 'x').sum()))
         )
 
@@ -60,32 +59,39 @@ class CreateVCAMaster():
         validAssessments = validAssessments[validAssessments[self.opt.blankCol] != 'x']
 
         # Remove proposers marks
-        criteria = self.gspreadWrapper.infringementsColumns + [self.opt.topQualityCol, self.opt.otherRationaleCol]
+        criteria = [self.opt.excellentCol, self.opt.goodCol, self.opt.notValidCol]
         for col in criteria:
             validAssessments[col] = ''
 
         # Assign 'x' for marks
         validAssessments[self.opt.proposerMarkCol] = validAssessments[self.opt.proposerMarkCol].apply(
-            lambda r: 'x' if (r) else ''
+            lambda r: 'x' if (r > 0) else ''
         )
 
         # Write sheet with assessments
         assessmentsWidths = [
-            ('A', 40), ('B', 60), ('D', 40), ('E', 200), ('F', 40), ('G', 60), ('H', 120), ('I', 400),
-            ('J:V', 30), ('W', 300)
+            ('A', 30), ('B:C', 150), ('D', 100), ('E:F', 40), ('G', 300),
+            ('H', 30), ('I', 300), ('J', 30), ('K', 300), ('L:N', 30),
+            ('N', 300), ('O:Q', 30)
         ]
         assessmentsFormats = [
-            ('G:G', self.utils.counterFormat),
-            ('I:I', self.utils.noteFormat),
-            ('J:V', self.utils.counterFormat),
-            ('A1:W1', self.utils.headingFormat),
-            ('B1', self.utils.verticalHeadingFormat),
-            ('D1', self.utils.verticalHeadingFormat),
-            ('F1:G1', self.utils.verticalHeadingFormat),
-            ('J1:V1', self.utils.verticalHeadingFormat),
-            ('K2:L', self.utils.greenFormat),
-            ('P2:P', self.utils.redFormat),
-            ('Q2:V', self.utils.yellowFormat),
+            ('A', self.utils.counterFormat),
+            ('H', self.utils.counterFormat),
+            ('J', self.utils.counterFormat),
+            ('L', self.utils.counterFormat),
+            ('M', self.utils.counterFormat),
+            ('A1:Q1', self.utils.headingFormat),
+            ('M1:M1', self.utils.verticalHeadingFormat),
+            ('H1', self.utils.verticalHeadingFormat),
+            ('J1', self.utils.verticalHeadingFormat),
+            ('L1', self.utils.verticalHeadingFormat),
+            ('O1:Q1', self.utils.verticalHeadingFormat),
+            ('G2:G', self.utils.textFormat),
+            ('I2:I', self.utils.textFormat),
+            ('K2:K', self.utils.textFormat),
+            ('O2:O', self.utils.greenFormat),
+            ('P2:P', self.utils.greenFormat),
+            ('Q2:Q', self.utils.yellowFormat),
         ]
 
         self.gspreadWrapper.createSheetFromDf(

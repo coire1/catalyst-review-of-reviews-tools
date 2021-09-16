@@ -62,11 +62,10 @@ class GspreadWrapper():
             return self.df
         return False
 
-    def getProposersData(self):
-        self.proposersDoc = self.gc.open_by_key(self.opt.proposersFile)
+    def getProposersAggregatedData(self):
+        self.proposersDoc = self.gc.open_by_key(self.opt.proposersAggregateFile)
         self.proposersSheet = self.proposersDoc.worksheet(self.opt.assessmentsSheet)
         self.dfProposers = pd.DataFrame(self.proposersSheet.get_all_records())
-        self.dfProposers[self.opt.proposerMarkCol] = self.dfProposers.apply(self.checkMarks, axis=1)
 
     def getProposersMasterData(self):
         self.proposersMasterDoc = self.gc.open_by_key(self.opt.proposersMasterFile)

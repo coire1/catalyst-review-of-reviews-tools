@@ -57,7 +57,7 @@ class CreateProposerDocument():
             ('H1', self.utils.verticalHeadingFormat),
             ('J1', self.utils.verticalHeadingFormat),
             ('L1', self.utils.verticalHeadingFormat),
-            ('N2:N', self.utils.redFormat),
+            ('N2:N', self.utils.yellowFormat),
             ('G2:G', self.utils.textFormat),
             ('I2:I', self.utils.textFormat),
             ('K2:K', self.utils.textFormat),
