@@ -4,12 +4,33 @@ from utils import Utils
 
 from gspread_formatting import *
 import pandas as pd
+import json
 
 class CreateProposerDocument():
     def __init__(self):
         self.opt = Options()
         self.utils = Utils()
         self.gspreadWrapper = GspreadWrapper()
+
+    def filterOutCAProposers(self, proposersDf):
+        toInclude = []
+        toExclude = []
+        proposals = json.load(open('proposals.json'))
+        users = json.load(open('users.json'))
+        for id, row in proposersDf.iterrows():
+            ass = row.to_dict()
+            user = next((item for item in users if item["id"] == ass[self.opt.assessorCol]), None)
+            proposal = next((item for item in proposals if item["id"] == ass[self.opt.proposalIdCol]), None)
+            if (user and proposal):
+                if (proposal["category"] in user["campaigns"]):
+                    toExclude.append(ass)
+                    print(ass)
+                else:
+                    toInclude.append(row)
+            else:
+                toInclude.append(ass)
+        return pd.DataFrame(toInclude), pd.DataFrame(toExclude)
+
 
     def createDoc(self):
         pd.options.display.max_columns = 100
@@ -39,6 +60,8 @@ class CreateProposerDocument():
             ) else ''
         , axis=1)
 
+        toInclude, toExclude = self.filterOutCAProposers(proposerDf)
+
         print('Format columns...')
         widths = [
             ('A', 30), ('B:C', 150), ('D', 100), ('E:F', 40), ('G', 300),
@@ -66,11 +89,21 @@ class CreateProposerDocument():
         self.gspreadWrapper.createSheetFromDf(
             spreadsheet,
             "Assessments",
-            proposerDf,
+            toInclude,
             headings,
             widths,
             formats
         )
+
+        if (len(toExclude)):
+            self.gspreadWrapper.createSheetFromDf(
+                spreadsheet,
+                "Assessments Excluded (CA proposer in same challenge)",
+                toExclude,
+                headings,
+                widths,
+                formats
+            )
         print('Master Document for proposers created')
         print('Link: {}'.format(spreadsheet.url))
 
