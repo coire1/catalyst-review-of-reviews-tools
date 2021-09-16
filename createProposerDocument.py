@@ -56,7 +56,10 @@ class CreateProposerDocument():
             lambda r: 'x' if (
                 (str(r[self.opt.q0Col]).strip() == "") or
                 (str(r[self.opt.q1Col]).strip() == "") or
-                (str(r[self.opt.q2Col]).strip() == "")
+                (str(r[self.opt.q2Col]).strip() == "") or
+                (str(r[self.opt.q0Rating]).strip() == "NA") or
+                (str(r[self.opt.q1Rating]).strip() == "NA") or
+                (str(r[self.opt.q2Rating]).strip() == "NA")
             ) else ''
         , axis=1)
 
