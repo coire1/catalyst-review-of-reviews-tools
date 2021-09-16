@@ -1,9 +1,20 @@
 {
   "accountEmail": "",
-  "gSheetAuthFile": "gsheet-accounts/service_account.json",
   "allowedBlankPerAssessor": 0.2,
   "cardLimit": 0.5,
   "minimumVCA": 4,
+  "criteriaGroups": [
+    {
+      "1": "Impact / Alignment",
+      "2": "Feasibility",
+      "6": "Auditability"
+    },
+    {
+      "5": "Impact / Alignment",
+      "3": "Feasibility",
+      "4": "Auditability"
+    }
+  ],
   "assessmentsCacheFilename": "assessements",
   "assessmentsSheet": "Assessments",
   "proposalKeyCol": "Idea Title",
@@ -13,7 +24,6 @@
   "ideaURLCol": "Idea URL",
   "questionCol": "Question",
   "questionIdCol": "question_id",
-  "challengeCol": "Challenge",
   "ratingCol": "Rating Given",
   "assessmentCol": "Assessment Note",
   "assessorCol": "Assessor",
@@ -31,17 +41,33 @@
   "incompleteReadingCol": "Incomplete Reading",
   "notRelatedCol": "Not Related",
   "otherCol": "General Infraction",
-  "otherRationaleCol": "General Infraction: rationale",
+  "otherRationaleCol": "Not valid: rationale",
   "noVCAReviewsCol": "# of vCAs Reviews",
   "yellowCardCol": "Yellow Card",
   "redCardCol": "Red Card",
-  "proposerDocumentName": "Review of Reviewers for Proposers - Fund5",
+
+  "q0Col": "Impact / Alignment Note",
+  "q0Rating": "Impact / Alignment Rating",
+  "q1Col": "Feasibility Note",
+  "q1Rating": "Feasibility Rating",
+  "q2Col": "Auditability Note",
+  "q2Rating": "Auditability Rating",
+  "excellentCol": "Excellent",
+  "goodCol": "Good",
+  "notValidCol": "Filtered Out",
+  "notValidRationaleCol": "Filtered Out: rationale",
+  "proposersRationaleCol": "Proposer Not Valid rationale",
+  "proposersMasterFile": "",
+  "proposersAggregateFileName": "Proposers Aggregated - Fund 6",
+  "proposersAggregateFile": "",
+
+  "proposerDocumentName": "Proposers Master File - Fund6",
   "manualDeletedAssessorsRecap": "",
   "originalExportFromIdeascale": "",
   "proposersFile": "",
-  "VCAMasterFileName": "vCA Master File - Fund 5",
+  "VCAMasterFileName": "vCA Master File - Fund 6",
   "VCAMasterFile": "",
-  "VCAAggregateFileName": "vCA Aggregated - Fund 5",
+  "VCAAggregateFileName": "vCA Aggregated - Fund 6",
   "VCAsFiles": [
   ],
   "excludedCAProposers": [
