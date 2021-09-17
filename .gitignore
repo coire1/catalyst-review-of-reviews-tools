@@ -7,3 +7,4 @@ __pycache__
 options.json
 proposers-files/*
 users.json
+users-updated.json
