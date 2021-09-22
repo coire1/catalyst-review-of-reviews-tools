@@ -41,7 +41,7 @@ class CreateProposerDocument():
         )
         # Define all the columns needed in the file
         headings = [
-            self.opt.assessmentsIdCol,
+            self.opt.assessmentsIdCol, self.opt.challengeCol,
             self.opt.proposalKeyCol, self.opt.ideaURLCol, self.opt.assessorCol,
             self.opt.tripletIdCol, self.opt.proposalIdCol,
             self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
@@ -66,26 +66,27 @@ class CreateProposerDocument():
 
         print('Format columns...')
         widths = [
-            ('A', 30), ('B:C', 150), ('D', 100), ('E:F', 40), ('G', 300),
-            ('H', 30), ('I', 300), ('J', 30), ('K', 300), ('L:N', 30),
-            ('O', 300)
+            ('A', 30), ('B', 100), ('C:D', 150), ('E', 100), ('F:G', 50), 
+            ('H', 300), ('I', 30), ('J', 300), ('K', 30), ('L', 300), 
+            ('M:O', 30), ('P', 250)
         ]
 
         formats = [
             ('A', self.utils.counterFormat),
-            ('H', self.utils.counterFormat),
-            ('J', self.utils.counterFormat),
-            ('L', self.utils.counterFormat),
+            ('I', self.utils.counterFormat),
+            ('K', self.utils.counterFormat),
             ('M', self.utils.counterFormat),
-            ('A1:O1', self.utils.headingFormat),
-            ('M1:N1', self.utils.verticalHeadingFormat),
-            ('H1', self.utils.verticalHeadingFormat),
-            ('J1', self.utils.verticalHeadingFormat),
-            ('L1', self.utils.verticalHeadingFormat),
-            ('N2:N', self.utils.yellowFormat),
-            ('G2:G', self.utils.textFormat),
-            ('I2:I', self.utils.textFormat),
-            ('K2:K', self.utils.textFormat),
+            ('N', self.utils.counterFormat),
+            ('A1:P1', self.utils.headingFormat),
+            ('F1:G1', self.utils.verticalHeadingFormat),
+            ('N1:O1', self.utils.verticalHeadingFormat),
+            ('I1', self.utils.verticalHeadingFormat),
+            ('K1', self.utils.verticalHeadingFormat),
+            ('M1', self.utils.verticalHeadingFormat),
+            ('O2:O', self.utils.yellowFormat),
+            ('H2:H', self.utils.textFormat),
+            ('J2:J', self.utils.textFormat),
+            ('L2:L', self.utils.textFormat),
         ]
 
         self.gspreadWrapper.createSheetFromDf(
