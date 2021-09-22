@@ -8,3 +8,4 @@ options.json
 proposers-files/*
 users.json
 users-updated.json
+download-errors.json
