@@ -27,8 +27,7 @@ class DownloadCsvFromDrive():
                 print("GDrive error downloading: {}".format(gfile))
                 self.fileErrors.append(gfile)
                 print(e)
-            except:
-                print(e)
+            except Exception as e:
                 self.fileErrors.append(gfile)
                 print("Generic error downloading: {}".format(gfile))
 
