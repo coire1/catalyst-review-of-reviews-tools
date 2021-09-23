@@ -7,7 +7,6 @@ class DownloadCsvFromDrive():
     def __init__(self):
         self.gspreadWrapper = GspreadWrapper()
         self.fileList = [
-            "1LA4Gt1W1PU-tMwFoef7DbtUWLeo3W0jD4HqEDCX46wM"
         ]
         self.fileErrors = []
 

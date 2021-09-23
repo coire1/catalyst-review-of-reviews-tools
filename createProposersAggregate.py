@@ -35,26 +35,28 @@ class createProposersAggregate():
         self.prepareBaseData()
         self.prepareProposersFileList()
         self.proposersData = []
+        self.proposersFileList = []
         for proposerFile in self.proposersFiles:
-            print(proposerFile)
+            print("Loading {}".format(proposerFile))
             data = pd.read_csv(proposerFile)
             data.set_index(self.opt.assessmentsIdCol, inplace=True)
             data.fillna('', inplace=True)
             self.proposersData.append(data)
+            self.proposersFileList.append(proposerFile)
 
     def createDoc(self):
         self.loadProposersFiles()
         # Loop over master ids as reference
         for id, row in self.dfMasterProposers.iterrows():
             # Loop over all vca files
-            for proposerDf in self.proposersData:
+            for filesIdx, proposerDf in enumerate(self.proposersData):
                 if (id in proposerDf.index):
                     locAss = proposerDf.loc[id]
                     integrity = self.checkIntegrity(id, row, locAss)
                     if (integrity is False):
-                        print('Error')
-                        break
-                        break
+                        fn = self.proposersFileList[filesIdx]
+                        print("{} failed to pass the integrity test at id {}".format(fn, id))
+                        return False
 
                     if (self.isProposerFeedbackValid(locAss)):
                         col = self.opt.notValidCol
@@ -117,7 +119,6 @@ class createProposersAggregate():
             (ass1[self.opt.q2Rating] != ass2[self.opt.q2Rating]) or
             (ass1[self.opt.assessorCol] != ass2[self.opt.assessorCol])
         ):
-            print("Something wrong with assessment {}".format(id))
             return False
         return True
 
