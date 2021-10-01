@@ -72,6 +72,11 @@ class GspreadWrapper():
         self.proposersSheet = self.proposersMasterDoc.worksheet(self.opt.assessmentsSheet)
         self.dfMasterProposers = pd.DataFrame(self.proposersSheet.get_all_records())
 
+    def getVCAMasterData(self):
+        self.vcaMasterDoc = self.gc.open_by_key(self.opt.VCAMasterFile)
+        self.vcaSheet = self.vcaMasterDoc.worksheet(self.opt.assessmentsSheet)
+        self.dfVca = pd.DataFrame(self.vcaSheet.get_all_records())
+
     def getVCAMasterAssessors(self):
         self.vcaDoc = self.gc.open_by_key(self.opt.VCAMasterFile)
         self.vcaSheet = self.vcaDoc.worksheet('Community Advisors')

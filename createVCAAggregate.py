@@ -7,340 +7,388 @@ from gspread_formatting import *
 
 from time import sleep
 import pandas as pd
+import json
+import os
 
 class createVCAAggregate():
     def __init__(self):
         self.opt = Options()
         self.utils = Utils()
         self.gspreadWrapper = GspreadWrapper()
+        self.proposals = json.load(open('proposals.json'))
+        self.vcas = json.load(open('vcas.json'))
+        self.vcasFiles = []
 
-        self.infringementsColumns = [
-            self.opt.profanityCol, self.opt.nonConstructiveCol,
-            self.opt.scoreCol, self.opt.copyCol, self.opt.incompleteReadingCol,
-            self.opt.notRelatedCol, self.opt.otherCol
-        ]
-        self.positiveColumns = [self.opt.fairCol, self.opt.topQualityCol]
-        '''
-        self.neutralColumns = [
-            self.opt.abstainCol, self.opt.lenientCol, self.opt.strictCol
-        ]
-        '''
-        self.neutralColumns = [self.opt.abstainCol]
-        self.indicatorColumns = [self.opt.lenientCol, self.opt.strictCol]
-        self.yellowColumns = [
-            self.opt.nonConstructiveCol, self.opt.scoreCol, self.opt.copyCol,
-            self.opt.incompleteReadingCol, self.opt.notRelatedCol,
-            self.opt.otherCol
-        ]
-        self.redColumns = [self.opt.profanityCol]
-        self.feedbackColumns = self.infringementsColumns + self.positiveColumns
-        self.allColumns = self.infringementsColumns + self.positiveColumns + self.neutralColumns + self.indicatorColumns
+        self.badColumns = [self.opt.notValidCol]
+        self.goodColumns = [self.opt.goodCol]
+        self.excellentColumns = [self.opt.excellentCol]
+        self.allColumns = self.badColumns + self.goodColumns + self.excellentColumns
 
     def prepareBaseData(self):
         self.gspreadWrapper.getVCAMasterData()
         self.dfVca = self.gspreadWrapper.dfVca.set_index('id')
+        self.gspreadWrapper.getProposersMasterData()
+        self.dfMasterProposers = self.gspreadWrapper.dfMasterProposers.set_index('id')
         # Set all counters to 0
         self.dfVca[self.opt.noVCAReviewsCol] = 0
-        self.dfVca[self.opt.yellowCardCol] = 0
-        self.dfVca[self.opt.redCardCol] = 0
         for col in self.allColumns:
             self.dfVca[col] = 0
+            self.dfVca['Result ' + col] = 0
 
-        self.gspreadWrapper.getVCAMasterAssessors()
-        self.gspreadWrapper.dfVcaAssessors[self.opt.yellowCardCol] = 0
-        self.gspreadWrapper.dfVcaAssessors[self.opt.redCardCol] = 0
-
-        self.gspreadWrapper.getProposersData()
+    def prepareVCAsFileList(self):
+        for currentDirPath, currentSubdirs, currentFiles in os.walk('./vcas-files'):
+            for aFile in currentFiles:
+                if aFile.endswith(".csv") :
+                    fpath = str(os.path.join(currentDirPath, aFile))
+                    self.vcasFiles.append(fpath)
 
     def loadVCAsFiles(self):
         self.prepareBaseData()
-        self.vcaData = []
-        self.vcaDocs = []
-        for vcaFile in self.opt.VCAsFiles:
-            print(vcaFile)
-            vcaDocument = self.gspreadWrapper.gc.open_by_key(vcaFile)
-            try:
-                vcaSheet = vcaDocument.worksheet("Assessments")
-            except:
-                vcaSheet = vcaDocument.get_worksheet(0)
-            data = pd.DataFrame(vcaSheet.get_all_records())
-            data.set_index('id', inplace=True)
-            self.vcaData.append(data)
-            self.vcaDocs.append(vcaDocument)
-            #sleep(35)
+        self.prepareVCAsFileList()
+        self.vcasData = []
+        self.vcasFileList = []
+        for vcaFile in self.vcasFiles:
+            print("Loading {}".format(vcaFile))
+            data = pd.read_csv(vcaFile)
+            data.set_index(self.opt.assessmentsIdCol, inplace=True)
+            data.fillna('', inplace=True)
+            if not set([self.opt.notValidCol]).issubset(data.columns):
+                data[self.opt.notValidCol] = data[self.opt.notValidAlternativeCol]
+                data.drop(self.opt.notValidAlternativeCol, axis=1, inplace=True)
+            data = self.filterVCAConficts(data, vcaFile)
+            self.vcasData.append(data)
+            self.vcasFileList.append(vcaFile)
 
     def createDoc(self):
         self.loadVCAsFiles()
         # Loop over master ids as reference
         for id, row in self.dfVca.iterrows():
             # Loop over all vca files
-            for vcaDf in self.vcaData:
+            for filesIdx, vcaDf in enumerate(self.vcasData):
                 if (id in vcaDf.index):
                     locAss = vcaDf.loc[id]
                     integrity = self.checkIntegrity(id, row, locAss)
                     if (integrity is False):
-                        print('Error')
-                        break
-                        break
+                        fn = self.vcasFileList[filesIdx]
+                        print("{} failed to pass the integrity test at id {}".format(fn, id))
 
-                    good = self.goodFeedback(locAss)
                     bad = self.badFeedback(locAss)
-                    neutral = self.neutralFeedback(locAss)
-                    if (self.isVCAfeedbackValid(locAss, good, bad, neutral)):
-                        if (good or bad):
+                    good = self.goodFeedback(locAss)
+                    excellent = self.excellentFeedback(locAss)
+                    if (self.isVCAfeedbackValid(locAss, bad, good, excellent)):
+                        if (bad or good or excellent):
                             self.dfVca.loc[id, self.opt.noVCAReviewsCol] = self.dfVca.loc[id, self.opt.noVCAReviewsCol] + 1
                         for col in self.allColumns:
                             colVal = self.checkIfMarked(locAss, col)
                             if (colVal > 0):
                                 self.dfVca.loc[id, col] = self.dfVca.loc[id, col] + colVal
 
-            (yellow, red) = self.calculateCards(self.dfVca.loc[id])
-            self.dfVca.loc[id, self.opt.yellowCardCol] = yellow
-            self.dfVca.loc[id, self.opt.redCardCol] = red
+            (bad, good, excellent) = self.calculateOutcome(self.dfVca.loc[id])
+            self.dfVca.loc[id, 'Result ' + self.opt.notValidCol] = bad
+            self.dfVca.loc[id, 'Result ' + self.opt.goodCol] = good
+            self.dfVca.loc[id, 'Result ' + self.opt.excellentCol] = excellent
 
-        # Extract red card assessors and update List
-        redCards = self.dfVca[self.dfVca[self.opt.redCardCol] > 0]
-        self.redCardsAssessors = list(redCards[self.opt.assessorCol].unique())
+        vcaAggregatedAssessments = pd.DataFrame(self.dfVca).copy()
+        vcaAggregatedAssessments.fillna('', inplace=True)
+        vcaAggregatedAssessments[self.opt.assessmentsIdCol] = vcaAggregatedAssessments.index
 
+        aggregatedAssessments = pd.DataFrame(self.dfVca).copy()
+        aggregatedAssessments.fillna('', inplace=True)
+        aggregatedAssessments[self.opt.assessmentsIdCol] = aggregatedAssessments.index
+        aggregatedAssessments[self.opt.excellentCol] = aggregatedAssessments['Result ' + self.opt.excellentCol]
+        aggregatedAssessments[self.opt.goodCol] = aggregatedAssessments['Result ' + self.opt.goodCol]
+        aggregatedAssessments[self.opt.notValidCol] = aggregatedAssessments['Result ' + self.opt.notValidCol]
 
-        # Select valid assessments (no red card assessors, no yellow card assessments, no blank assessments)
-        validAssessments = self.dfVca[(
-            (self.dfVca[self.opt.yellowCardCol] == 0) &
-            ~self.dfVca[self.opt.assessorCol].isin(self.redCardsAssessors)
-        )]
+        # Select valid assessments (no filtered out, no blank assessments)
+        validAssessments = pd.DataFrame(self.dfVca).copy()
+        validAssessments.fillna('', inplace=True)
         validAssessments[self.opt.assessmentsIdCol] = validAssessments.index
+        validAssessments = validAssessments[(
+            (~(validAssessments['Result ' + self.opt.notValidCol] == 'x'))
+        )]
+        validAssessments[self.opt.excellentCol] = validAssessments['Result ' + self.opt.excellentCol]
+        validAssessments[self.opt.goodCol] = validAssessments['Result ' + self.opt.goodCol]
+        validAssessments[self.opt.notValidCol] = validAssessments['Result ' + self.opt.notValidCol]
 
-        # Add Proposal title (getting it from Proposer doc)
-        validAssessments[self.opt.proposalKeyCol] = validAssessments.apply(
-            lambda x: str(self.gspreadWrapper.dfProposers.loc[self.gspreadWrapper.dfProposers[self.opt.assessmentsIdCol] == x[self.opt.assessmentsIdCol], self.opt.proposalKeyCol].iloc[0]),
-            axis=1
-        )
+        blanksAssessments = pd.DataFrame(self.dfMasterProposers).copy()
+        blanksAssessments.fillna('', inplace=True)
+        blanksAssessments[self.opt.assessmentsIdCol] = blanksAssessments.index
+        blanksAssessments = blanksAssessments[(
+            (blanksAssessments[self.opt.blankCol] == 'x')
+        )]
+        blanksAssessments.drop(self.opt.notValidRationaleCol, axis=1, inplace=True)
+        excludedAssessments = pd.DataFrame(self.dfVca).copy()
+        excludedAssessments.fillna('', inplace=True)
+        excludedAssessments[self.opt.assessmentsIdCol] = excludedAssessments.index
+        excludedAssessments = excludedAssessments[(
+            (excludedAssessments['Result ' + self.opt.notValidCol] == 'x')
+        )]
+        excludedAssessments[self.opt.blankCol] = ''
+        excludedAssessments[self.opt.excellentCol] = excludedAssessments['Result ' + self.opt.excellentCol]
+        excludedAssessments[self.opt.goodCol] = excludedAssessments['Result ' + self.opt.goodCol]
+        excludedAssessments[self.opt.notValidCol] = excludedAssessments['Result ' + self.opt.notValidCol]
+        excludedAssessments = pd.concat([blanksAssessments, excludedAssessments])
 
         # create group for final scores
-        finalProposals = validAssessments.groupby(self.opt.proposalKeyCol, as_index=False)[self.opt.ratingCol].mean()
+        validAssessmentsRatings = pd.DataFrame(validAssessments).copy()
+        validAssessmentsRatings['Rating Given'] = validAssessmentsRatings[
+            [self.opt.q0Rating, self.opt.q1Rating, self.opt.q2Rating]
+        ].mean(axis=1)
+        finalProposals = validAssessmentsRatings.groupby([self.opt.proposalIdCol, self.opt.proposalKeyCol], as_index=False)['Rating Given'].mean()
 
-        # generate Assessor Recap
-        assessors = self.assessorRecap()
-        # generate nonValidAssessment recap
-        nonValidAssessments = self.nonValidAssessments(validAssessments)
+        # Create list of VCAs
+        vcaList = pd.DataFrame(self.vcas)
 
-        # Generate Doc
+        # Save csvs
+        vcaAggregatedAssessments.to_csv('cache/vca-aggregated.csv')
+        aggregatedAssessments.to_csv('cache/aggregated.csv')
         validAssessments.to_csv('cache/valid.csv')
-        nonValidAssessments.to_csv('cache/non-valid.csv')
-        assessors.to_csv('cache/assessors.csv')
+        excludedAssessments.to_csv('cache/excluded.csv')
+        # Generate Doc
         spreadsheet = self.gspreadWrapper.createDoc(self.opt.VCAAggregateFileName)
 
+        # Print aggregated assessments
+        aggregatedHeadings = [
+            self.opt.assessmentsIdCol, self.opt.proposalKeyCol,
+            self.opt.challengeCol, self.opt.ideaURLCol, self.opt.assessorCol,
+            self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
+            self.opt.q2Col, self.opt.q2Rating, self.opt.proposerMarkCol,
+            self.opt.proposersRationaleCol, self.opt.excellentCol,
+            self.opt.goodCol, self.opt.notValidCol
+        ]
+        aggregatedWidths = [
+            ('A', 40), ('B:D', 120), ('E', 100), ('F', 300), ('G', 30),
+            ('H', 300), ('I', 30), ('J', 300), ('K:L', 30), ('M', 300),
+            ('N:P', 30)
+        ]
+        aggregatedFormats = [
+            ('A1:P1', self.utils.headingFormat),
+            ('A2:A', self.utils.counterFormat),
+            ('G2:G', self.utils.counterFormat),
+            ('I2:I', self.utils.counterFormat),
+            ('K2:K', self.utils.counterFormat),
+            ('L2:L', self.utils.counterFormat),
+            ('N2:N', self.utils.counterFormat),
+            ('O2:O', self.utils.counterFormat),
+            ('P2:P', self.utils.counterFormat),
+            ('F2:F', self.utils.noteFormat),
+            ('H2:H', self.utils.noteFormat),
+            ('J2:J', self.utils.noteFormat),
+            ('M2:M', self.utils.noteFormat),
+            ('A1:A1', self.utils.verticalHeadingFormat),
+            ('G1:G1', self.utils.verticalHeadingFormat),
+            ('I1:I1', self.utils.verticalHeadingFormat),
+            ('K1:K1', self.utils.verticalHeadingFormat),
+            ('L1:L1', self.utils.verticalHeadingFormat),
+            ('N1:P1', self.utils.verticalHeadingFormat),
+            ('N2:N', self.utils.greenFormat),
+            ('O2:O', self.utils.greenFormat),
+            ('P2:P', self.utils.yellowFormat)
+        ]
+
+        self.gspreadWrapper.createSheetFromDf(
+            spreadsheet,
+            'Aggregated',
+            aggregatedAssessments,
+            aggregatedHeadings,
+            columnWidths=aggregatedWidths,
+            formats=aggregatedFormats
+        )
+
         # Print valid assessments
-        assessmentsHeadings = [
-            self.opt.assessmentsIdCol, self.opt.tripletIdCol,
-            self.opt.proposalKeyCol, self.opt.ideaURLCol,
-            self.opt.proposalIdCol, self.opt.questionCol, self.opt.questionIdCol,
-            self.opt.ratingCol, self.opt.assessorCol, self.opt.assessmentCol,
-            self.opt.proposerMarkCol, self.opt.fairCol, self.opt.topQualityCol,
-            self.opt.abstainCol, self.opt.strictCol, self.opt.lenientCol,
-            self.opt.profanityCol, self.opt.nonConstructiveCol,
-            self.opt.scoreCol, self.opt.copyCol, self.opt.incompleteReadingCol,
-            self.opt.notRelatedCol, self.opt.otherCol, self.opt.noVCAReviewsCol,
-            self.opt.yellowCardCol, self.opt.redCardCol
+        validHeadings = [
+            self.opt.assessmentsIdCol, self.opt.proposalKeyCol,
+            self.opt.proposalIdCol, self.opt.ideaURLCol, self.opt.assessorCol,
+            self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
+            self.opt.q2Col, self.opt.q2Rating, self.opt.excellentCol,
+            self.opt.goodCol
         ]
-        assessmentsWidths = [
-            ('A', 40), ('B', 60), ('C', 120), ('D', 120), ('E', 40), ('F', 200), ('G', 40), ('H', 60), ('I', 120), ('J', 400),
-            ('K:Z', 30)
+        validWidths = [
+            ('A', 30), ('B', 120), ('C', 30), ('D', 120), ('E', 100),
+            ('F', 300), ('G', 30), ('H', 300), ('I', 30), ('J', 300),
+            ('K:M', 30)
         ]
-        assessmentsFormats = [
-            ('H:H', self.utils.counterFormat),
+        validFormats = [
+            ('A1:M1', self.utils.headingFormat),
+            ('A2:A', self.utils.counterFormat),
+            ('C2:C', self.utils.counterFormat),
+            ('G2:G', self.utils.counterFormat),
+            ('I2:I', self.utils.counterFormat),
+            ('K2:K', self.utils.counterFormat),
+            ('L2:L', self.utils.counterFormat),
+            ('M2:M', self.utils.counterFormat),
+            ('F:F', self.utils.noteFormat),
+            ('H:H', self.utils.noteFormat),
             ('J:J', self.utils.noteFormat),
-            ('K:Z', self.utils.counterFormat),
-            ('A1:X1', self.utils.headingFormat),
-            ('B1', self.utils.verticalHeadingFormat),
-            ('E1', self.utils.verticalHeadingFormat),
-            ('G1:H1', self.utils.verticalHeadingFormat),
-            ('K1:Z1', self.utils.verticalHeadingFormat),
+            ('A1:A1', self.utils.verticalHeadingFormat),
+            ('C1:C1', self.utils.verticalHeadingFormat),
+            ('G1:G1', self.utils.verticalHeadingFormat),
+            ('I1:I1', self.utils.verticalHeadingFormat),
+            ('K1:K1', self.utils.verticalHeadingFormat),
+            ('L1:M1', self.utils.verticalHeadingFormat),
             ('L2:L', self.utils.greenFormat),
-            ('Q2:Q', self.utils.redFormat),
-            ('R2:W', self.utils.yellowFormat),
-            ('Y2:Y', self.utils.yellowFormat),
-            ('Z2:Z', self.utils.redFormat),
+            ('M2:M', self.utils.greenFormat)
         ]
 
         self.gspreadWrapper.createSheetFromDf(
             spreadsheet,
             'Valid Assessments',
             validAssessments,
-            assessmentsHeadings,
-            columnWidths=assessmentsWidths,
-            formats=assessmentsFormats
+            validHeadings,
+            columnWidths=validWidths,
+            formats=validFormats
         )
 
-        # Print assessors recap
+        proposalsWidths = [
+            ('A', 300), ('B', 60), ('C', 60)
+        ]
+        proposalsFormats = [
+            ('B:B', self.utils.counterFormat),
+            ('C:C', self.utils.counterFormat),
+            ('A:A', self.utils.noteFormat),
+            ('A1:C1', self.utils.headingFormat),
+            ('B1', self.utils.verticalHeadingFormat),
+            ('C1', self.utils.verticalHeadingFormat),
+        ]
 
-        # Write sheet with CAs summary
         self.gspreadWrapper.createSheetFromDf(
             spreadsheet,
-            'Community Advisors',
-            assessors,
-            [
-                'assessor', 'total', 'blanks', 'blankPercentage', 'excluded',
-                'Yellow Card', 'Red Card', 'Constructive Feedback', 'note'
-            ],
-            columnWidths=[('A', 140), ('B:D', 60), ('E', 100), ('F:H', 40), ('I', 200)],
-            formats=[
-                ('B:C', self.utils.counterFormat),
-                ('F:H', self.utils.counterFormat),
-                ('D2:D', self.utils.percentageFormat),
-                ('A1:E1', self.utils.headingFormat),
-                ('B1:D1', self.utils.verticalHeadingFormat),
-                ('F1:H1', self.utils.verticalHeadingFormat),
-                ('F2:F', self.utils.yellowFormat),
-                ('G2:G', self.utils.redFormat),
-                ('H2:H', self.utils.greenFormat),
-            ]
+            'Proposals scores',
+            finalProposals,
+            [self.opt.proposalKeyCol, self.opt.proposalIdCol, 'Rating Given'],
+            columnWidths=proposalsWidths,
+            formats=proposalsFormats
         )
 
-
-        # Print non valid assessments -> reason, extract from proposer Doc
-
-        nonAssessmentsHeadings = [
-            self.opt.assessmentsIdCol, self.opt.tripletIdCol, self.opt.ideaURLCol,
-            self.opt.proposalIdCol, self.opt.questionCol,
-            self.opt.ratingCol, self.opt.assessorCol, self.opt.assessmentCol,
-            self.opt.blankCol,
-            self.opt.proposerMarkCol, self.opt.fairCol, self.opt.topQualityCol,
-            self.opt.abstainCol, self.opt.strictCol, self.opt.lenientCol,
-            self.opt.profanityCol, self.opt.nonConstructiveCol,
-            self.opt.scoreCol, self.opt.copyCol, self.opt.incompleteReadingCol,
-            self.opt.notRelatedCol, self.opt.otherCol, self.opt.noVCAReviewsCol,
-            self.opt.yellowCardCol, self.opt.redCardCol, 'reason'
+        # Print excluded assessments
+        excludedHeadings = [
+            self.opt.assessmentsIdCol, self.opt.proposalKeyCol,
+            self.opt.ideaURLCol, self.opt.assessorCol,
+            self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
+            self.opt.q2Col, self.opt.q2Rating, self.opt.blankCol,
+            self.opt.notValidCol
         ]
-        nonAssessmentsWidths = [
-            ('A', 40), ('B', 60), ('C', 120), ('D', 40), ('E', 200), ('F', 40), ('G', 120), ('H', 400),
-            ('I:Y', 30), ('Z', 200)
+        excludedWidths = [
+            ('A', 30), ('B', 120), ('C', 120), ('D', 100),
+            ('E', 300), ('F', 30), ('G', 300), ('H', 30), ('I', 300),
+            ('J:L', 30)
         ]
-        nonAssessmentsFormats = [
-            ('G:G', self.utils.counterFormat),
-            ('H:H', self.utils.noteFormat),
-            ('I:Y', self.utils.counterFormat),
-            ('A1:W1', self.utils.headingFormat),
-            ('B1', self.utils.verticalHeadingFormat),
-            ('D1', self.utils.verticalHeadingFormat),
-            ('F1:G1', self.utils.verticalHeadingFormat),
-            ('I1:Y1', self.utils.verticalHeadingFormat),
-            ('K2:L', self.utils.greenFormat),
-            ('P2:P', self.utils.redFormat),
-            ('Q2:V', self.utils.yellowFormat),
-            ('X2:X', self.utils.yellowFormat),
-            ('Y2:Y', self.utils.redFormat),
+        excludedFormats = [
+            ('A1:L1', self.utils.headingFormat),
+            ('A2:A', self.utils.counterFormat),
+            ('F2:F', self.utils.counterFormat),
+            ('H2:H', self.utils.counterFormat),
+            ('J2:J', self.utils.counterFormat),
+            ('K2:K', self.utils.counterFormat),
+            ('L2:L', self.utils.counterFormat),
+            ('E:E', self.utils.noteFormat),
+            ('G:G', self.utils.noteFormat),
+            ('I:I', self.utils.noteFormat),
+            ('A1:A1', self.utils.verticalHeadingFormat),
+            ('F1:F1', self.utils.verticalHeadingFormat),
+            ('H1:H1', self.utils.verticalHeadingFormat),
+            ('J1:J1', self.utils.verticalHeadingFormat),
+            ('K1:K1', self.utils.verticalHeadingFormat),
+            ('L1:L1', self.utils.verticalHeadingFormat),
+            ('K2:K', self.utils.redFormat),
+            ('L2:L', self.utils.yellowFormat)
         ]
 
         self.gspreadWrapper.createSheetFromDf(
             spreadsheet,
             'Excluded Assessments',
-            nonValidAssessments,
-            nonAssessmentsHeadings,
-            columnWidths=nonAssessmentsWidths,
-            formats=nonAssessmentsFormats
+            excludedAssessments,
+            excludedHeadings,
+            columnWidths=excludedWidths,
+            formats=excludedFormats
         )
 
-        # Print vca recap
-        allVcas = []
-        for vcaDoc in self.vcaDocs:
-            allVcas.append({'title': vcaDoc.title, 'link': vcaDoc.url})
-
-        allVcasDf = pd.DataFrame(allVcas)
+        vcasWidths = [
+            ('A', 100), ('B', 600)
+        ]
+        vcasFormats = [
+            ('A1:B1', self.utils.headingFormat),
+        ]
 
         self.gspreadWrapper.createSheetFromDf(
             spreadsheet,
             'Veteran Community Advisors',
-            allVcasDf
+            vcaList,
+            ['name', 'vca_link'],
+            columnWidths=vcasWidths,
+            formats=vcasFormats
         )
 
+        # Print aggregated assessments
+        vcaAggregatedHeadings = [
+            self.opt.assessmentsIdCol, self.opt.proposalKeyCol,
+            self.opt.ideaURLCol, self.opt.assessorCol,
+            self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
+            self.opt.q2Col, self.opt.q2Rating, self.opt.proposerMarkCol,
+            self.opt.proposersRationaleCol, self.opt.excellentCol,
+            self.opt.goodCol, self.opt.notValidCol, self.opt.noVCAReviewsCol,
+            'Result ' + self.opt.excellentCol, 'Result ' + self.opt.goodCol,
+            'Result ' + self.opt.notValidCol
 
-        proposalsWidths = [
-            ('A', 300), ('B', 60)
         ]
-        proposalsFormats = [
-            ('B:B', self.utils.counterFormat),
-            ('A:A', self.utils.noteFormat),
-            ('A1:B1', self.utils.headingFormat),
-            ('B1', self.utils.verticalHeadingFormat)
+        vcaAggregatedWidths = [
+            ('A', 40), ('B:D', 120), ('E', 300), ('F', 30),
+            ('G', 300), ('H', 30), ('I', 300), ('J:K', 30), ('L', 300),
+            ('M:S', 30)
+        ]
+        vcaAggregatedFormats = [
+            ('A1:S1', self.utils.headingFormat),
+            ('A2:A', self.utils.counterFormat),
+            ('F2:F', self.utils.counterFormat),
+            ('H2:H', self.utils.counterFormat),
+            ('J2:J', self.utils.counterFormat),
+            ('K2:K', self.utils.counterFormat),
+            ('M2:M', self.utils.counterFormat),
+            ('N2:N', self.utils.counterFormat),
+            ('O2:O', self.utils.counterFormat),
+            ('P2:P', self.utils.counterFormat),
+            ('Q2:Q', self.utils.counterFormat),
+            ('R2:R', self.utils.counterFormat),
+            ('S2:S', self.utils.counterFormat),
+            ('E2:E', self.utils.noteFormat),
+            ('G2:G', self.utils.noteFormat),
+            ('I2:I', self.utils.noteFormat),
+            ('L2:L', self.utils.noteFormat),
+            ('A1:A1', self.utils.verticalHeadingFormat),
+            ('F1:F1', self.utils.verticalHeadingFormat),
+            ('H1:H1', self.utils.verticalHeadingFormat),
+            ('J1:J1', self.utils.verticalHeadingFormat),
+            ('K1:K1', self.utils.verticalHeadingFormat),
+            ('M1:S1', self.utils.verticalHeadingFormat),
+            ('M2:M', self.utils.greenFormat),
+            ('N2:N', self.utils.greenFormat),
+            ('Q2:Q', self.utils.greenFormat),
+            ('R2:R', self.utils.greenFormat),
+            ('O2:O', self.utils.yellowFormat),
+            ('S2:S', self.utils.yellowFormat)
         ]
 
         self.gspreadWrapper.createSheetFromDf(
             spreadsheet,
-            'Proposals',
-            finalProposals,
-            [self.opt.proposalKeyCol, self.opt.ratingCol],
-            columnWidths=proposalsWidths,
-            formats=proposalsFormats
+            'vCA Aggregated',
+            vcaAggregatedAssessments,
+            vcaAggregatedHeadings,
+            columnWidths=vcaAggregatedWidths,
+            formats=vcaAggregatedFormats
         )
+
 
         print('Aggregated Document created')
         print('Link: {}'.format(spreadsheet.url))
 
-    def nonValidAssessments(self, validAssessments):
-        self.gspreadWrapper.getProposersData()
-        dfProposers = self.gspreadWrapper.dfProposers.set_index('id')
-        dfProposers[self.opt.assessmentsIdCol] = dfProposers.index
-        for col in self.allColumns:
-            dfProposers[col] = ''
-        dfProposers[self.opt.proposerMarkCol] = ''
-        dfProposers[self.opt.otherRationaleCol] = ''
-        nonValidAssessments = dfProposers[~dfProposers[self.opt.assessmentsIdCol].isin(validAssessments.index)].copy()
-        for id, row in nonValidAssessments.iterrows():
-            if (id in self.dfVca.index):
-                for col in self.allColumns:
-                    nonValidAssessments.loc[id, col] = int(self.dfVca.loc[id, col])
-                nonValidAssessments.loc[id, self.opt.yellowCardCol] = int(self.dfVca.loc[id, self.opt.yellowCardCol])
-                nonValidAssessments.loc[id, self.opt.redCardCol] = int(self.dfVca.loc[id, self.opt.redCardCol])
-                nonValidAssessments.loc[id, self.opt.noVCAReviewsCol] = int(self.dfVca.loc[id, self.opt.noVCAReviewsCol])
-        nonValidAssessments['reason'] = nonValidAssessments.apply(self.describeReason, axis=1)
-        nonValidAssessments.fillna('', inplace=True)
-        return nonValidAssessments
-
-    def describeReason(self, row):
-        reason = []
-        if (row[self.opt.blankCol] == 'x'):
-            reason.append(self.opt.blankCol)
-        if (row['id'] in self.dfVca.index):
-            tot = row[self.opt.noVCAReviewsCol]
-            for col in self.infringementsColumns:
-                if (tot > 0):
-                    if ((row[col]/tot) >= self.opt.cardLimit):
-                        reason.append(col)
-        excludedAssessors = list(self.gspreadWrapper.dfVcaAssessors[self.gspreadWrapper.dfVcaAssessors['excluded'] == 'TRUE']['assessor'])
-        if (row[self.opt.assessorCol] in excludedAssessors):
-            reason.append('Assessor excluded')
-        return ', '.join(reason)
-
-    def assessorRecap(self):
-        self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'].isin(self.redCardsAssessors), 'excluded'] = 'TRUE'
-        self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'].isin(self.redCardsAssessors), 'note'] = "red card"
-
-        # Extract assessors
-        locAssessors = self.dfVca.groupby(
-            self.opt.assessorCol
-        ).agg(
-            constructiveFeedback=(self.opt.topQualityCol, 'sum'),
-            red=(self.opt.redCardCol, 'sum'),
-            yellow=(self.opt.yellowCardCol, 'sum'),
-        )
-        for id, row in locAssessors.iterrows():
-            self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'] == id, self.opt.redCardCol] = row['red']
-            self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'] == id, self.opt.yellowCardCol] = row['yellow']
-            self.gspreadWrapper.dfVcaAssessors.loc[self.gspreadWrapper.dfVcaAssessors['assessor'] == id, self.opt.topQualityCol] = row['constructiveFeedback']
-
-        self.gspreadWrapper.dfVcaAssessors.fillna('', inplace=True)
-        return self.gspreadWrapper.dfVcaAssessors
-
-
     def checkIntegrity(self, id, ass1, ass2):
         if (
             (ass1[self.opt.proposalIdCol] != ass2[self.opt.proposalIdCol]) or
-            (ass1[self.opt.questionIdCol] != ass2[self.opt.questionIdCol]) or
-            (ass1[self.opt.ratingCol] != ass2[self.opt.ratingCol]) or
+            (ass1[self.opt.q0Rating] != ass2[self.opt.q0Rating]) or
+            (ass1[self.opt.q1Rating] != ass2[self.opt.q1Rating]) or
+            (ass1[self.opt.q2Rating] != ass2[self.opt.q2Rating]) or
             (ass1[self.opt.assessorCol] != ass2[self.opt.assessorCol])
         ):
-            print("Something wrong with assessment {}".format(id))
             return False
         return True
 
@@ -349,52 +397,68 @@ class createVCAAggregate():
             return 1
         return 0
 
-    def calculateCards(self, row):
-        yellow = 0
-        red = 0
+    def calculateOutcome(self, row):
+        bad = ''
+        good = ''
+        excellent = ''
         tot = row[self.opt.noVCAReviewsCol]
         if (tot >= self.opt.minimumVCA):
-            if ((row[self.opt.profanityCol]/tot) >= self.opt.cardLimit):
-                red = red + 1
-            for col in self.yellowColumns:
-                if ((row[col]/tot) >= self.opt.cardLimit):
-                    yellow = yellow + 1
-        return (yellow, red)
+            if (row[self.opt.excellentCol] > (tot/2)):
+                excellent = 'x'
+            elif (row[self.opt.notValidCol] >= (tot/2)):
+                bad = 'x'
+            else:
+                good = 'x'
+        return (bad, good, excellent)
 
     def goodFeedback(self, row):
-        for col in self.positiveColumns:
+        for col in self.goodColumns:
             if (self.checkIfMarked(row, col) > 0):
                 return True
         return False
 
     def badFeedback(self, row):
-        for col in self.infringementsColumns:
+        for col in self.badColumns:
             if (self.checkIfMarked(row, col) > 0):
                 return True
         return False
 
-    def badValid(self, row):
-        if (
-            (self.checkIfMarked(row, self.opt.otherCol) == 1) and
-            (self.checkIfMarked(row, self.opt.otherRationaleCol) == 0)
-        ):
-            return False
-        return True
-
-    def neutralFeedback(self, row):
-        for col in self.neutralColumns:
+    def excellentFeedback(self, row):
+        for col in self.excellentColumns:
             if (self.checkIfMarked(row, col) > 0):
                 return True
         return False
 
-    def isVCAfeedbackValid(self, row, good, bad, neutral):
-        if (bad):
-            if (self.badValid(row) is False):
-                return False
-        if (sum([good, bad, neutral]) <= 1):
+    def isVCAfeedbackValid(self, row, bad, good, excellent):
+        if (sum([bad, good, excellent]) <= 1):
             return True
+        print("VCA Feedback not valid")
         return False
 
+    def filterVCAConficts(self, data, filename):
+        toInclude = []
+        filename = os.path.basename(filename.replace('\\',os.sep))
+        vca = next((item for item in self.vcas if item['vca_file'] == filename), None)
+        if (vca):
+            for id, row in data.iterrows():
+                ass = row.to_dict()
+                proposal = next((item for item in self.proposals if item["id"] == ass[self.opt.proposalIdCol]), None)
+                if (proposal):
+                    # Exclude reviews for self reviews and for challenges
+                    # where vCAs are proposers
+                    #if (
+                    #    (ass[self.opt.assessorCol] != vca['ca_id']) and
+                    #    (proposal["category"] not in vca["campaigns"])
+                    #):
+
+                    # Exclude reviews for self reviews and for challenges
+                    if (ass[self.opt.assessorCol] != vca['ca_id']):
+                        toInclude.append(row)
+            print("Imported file {}".format(filename))
+            return pd.DataFrame(toInclude)
+        else:
+            print("Error importing file {}".format(filename))
+            return False
 
 
 

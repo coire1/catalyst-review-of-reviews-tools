@@ -6,6 +6,8 @@ service_account.json
 __pycache__
 options.json
 proposers-files/*
+vcas-files/*
 users.json
 users-updated.json
+vcas.json
 download-errors.json
