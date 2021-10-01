@@ -328,16 +328,16 @@ class createVCAAggregate():
             self.opt.proposersRationaleCol, self.opt.excellentCol,
             self.opt.goodCol, self.opt.notValidCol, self.opt.noVCAReviewsCol,
             'Result ' + self.opt.excellentCol, 'Result ' + self.opt.goodCol,
-            'Result ' + self.opt.notValidCol
+            'Result ' + self.opt.notValidCol, self.opt.proposalIdCol
 
         ]
         vcaAggregatedWidths = [
             ('A', 40), ('B:D', 120), ('E', 300), ('F', 30),
             ('G', 300), ('H', 30), ('I', 300), ('J:K', 30), ('L', 300),
-            ('M:S', 30)
+            ('M:T', 30)
         ]
         vcaAggregatedFormats = [
-            ('A1:S1', self.utils.headingFormat),
+            ('A1:T1', self.utils.headingFormat),
             ('A2:A', self.utils.counterFormat),
             ('F2:F', self.utils.counterFormat),
             ('H2:H', self.utils.counterFormat),
