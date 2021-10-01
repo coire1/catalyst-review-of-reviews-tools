@@ -56,7 +56,7 @@ class createProposersAggregate():
                     if (integrity is False):
                         fn = self.proposersFileList[filesIdx]
                         print("{} failed to pass the integrity test at id {}".format(fn, id))
-                        return False
+                        # return False
 
                     if (self.isProposerFeedbackValid(locAss)):
                         col = self.opt.notValidCol
