@@ -134,7 +134,7 @@ class createVCAAggregate():
         validAssessmentsRatings['Rating Given'] = validAssessmentsRatings[
             [self.opt.q0Rating, self.opt.q1Rating, self.opt.q2Rating]
         ].mean(axis=1)
-        finalProposals = validAssessmentsRatings.groupby([self.opt.proposalIdCol, self.opt.proposalKeyCol], as_index=False)['Rating Given'].mean()
+        finalProposals = validAssessmentsRatings.groupby([self.opt.proposalIdCol, self.opt.proposalKeyCol], as_index=False)['Rating Given'].mean().round(2)
 
         # Create list of VCAs
         vcaList = pd.DataFrame(self.vcas)
