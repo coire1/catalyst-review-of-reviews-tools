@@ -56,8 +56,9 @@ class createVCAAggregate():
                 data[self.opt.notValidCol] = data[self.opt.notValidAlternativeCol]
                 data.drop(self.opt.notValidAlternativeCol, axis=1, inplace=True)
             data = self.filterVCAConficts(data, vcaFile)
-            self.vcasData.append(data)
-            self.vcasFileList.append(vcaFile)
+            if data is not False:
+                self.vcasData.append(data)
+                self.vcasFileList.append(vcaFile)
 
     def createDoc(self):
         self.loadVCAsFiles()
