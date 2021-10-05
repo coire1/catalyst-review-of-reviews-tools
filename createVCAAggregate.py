@@ -317,7 +317,7 @@ class createVCAAggregate():
             ('A', 100), ('B', 600)
         ]
         vcasFormats = [
-            ('A1:B1', self.utils.headingFormat),
+            ('A1:C1', self.utils.headingFormat),
         ]
 
         self.gspreadWrapper.createSheetFromDf(
