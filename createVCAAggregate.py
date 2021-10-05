@@ -72,15 +72,21 @@ class createVCAAggregate():
                 if (id in vcaDf.index):
                     locAss = vcaDf.loc[id]
                     integrity = self.checkIntegrity(id, row, locAss)
+                    vca_fn = self.vcasFileList[filesIdx]
+                    vca_filename = os.path.basename(vca_fn.replace('\\',os.sep))
+                    single_vca = next((item for item in self.vcas if item['vca_file'] == vca_filename), None)
                     if (integrity is False):
-                        fn = self.vcasFileList[filesIdx]
-                        print("{} failed to pass the integrity test at id {}".format(fn, id))
+                        print("{} failed to pass the integrity test at id {}".format(vca_fn, id))
 
                     bad = self.badFeedback(locAss)
                     good = self.goodFeedback(locAss)
                     excellent = self.excellentFeedback(locAss)
                     if (self.isVCAfeedbackValid(locAss, bad, good, excellent)):
                         if (bad or good or excellent):
+                            if "No. of Reviews" in single_vca:
+                                single_vca['No. of Reviews'] = single_vca['No. of Reviews'] + 1
+                            else:
+                                single_vca['No. of Reviews'] = 1
                             self.dfVca.loc[id, self.opt.noVCAReviewsCol] = self.dfVca.loc[id, self.opt.noVCAReviewsCol] + 1
                         for col in self.allColumns:
                             colVal = self.checkIfMarked(locAss, col)
@@ -318,7 +324,7 @@ class createVCAAggregate():
             spreadsheet,
             'Veteran Community Advisors',
             vcaList,
-            ['name', 'vca_link'],
+            ['name', 'vca_link', 'No. of Reviews'],
             columnWidths=vcasWidths,
             formats=vcasFormats
         )
