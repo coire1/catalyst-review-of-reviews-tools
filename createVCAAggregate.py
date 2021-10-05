@@ -148,6 +148,7 @@ class createVCAAggregate():
 
         # Create list of VCAs
         vcaList = pd.DataFrame(self.vcas)
+        vcaList.fillna(0, inplace=True)
 
         # Save csvs
         vcaAggregatedAssessments.to_csv('cache/vca-aggregated.csv')
