@@ -447,13 +447,13 @@ class createVCAAggregate():
                 if (proposal):
                     # Exclude reviews for self reviews and for challenges
                     # where vCAs are proposers
-                    #if (
-                    #    (ass[self.opt.assessorCol] != vca['ca_id']) and
-                    #    (proposal["category"] not in vca["campaigns"])
-                    #):
+                    if (
+                        (ass[self.opt.assessorCol] != vca['ca_id']) and
+                        (proposal["category"] not in vca["campaigns"])
+                    ):
 
                     # Exclude reviews for self reviews and for challenges
-                    if (ass[self.opt.assessorCol] != vca['ca_id']):
+                    #if (ass[self.opt.assessorCol] != vca['ca_id']):
                         toInclude.append(row)
             print("Imported file {}".format(filename))
             return pd.DataFrame(toInclude)
