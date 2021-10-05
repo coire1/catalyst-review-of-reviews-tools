@@ -31,6 +31,7 @@ class createVCAAggregate():
         self.dfMasterProposers = self.gspreadWrapper.dfMasterProposers.set_index('id')
         # Set all counters to 0
         self.dfVca[self.opt.noVCAReviewsCol] = 0
+        self.dfVca[self.opt.challengeCol] = ''
         for col in self.allColumns:
             self.dfVca[col] = 0
             self.dfVca['Result ' + col] = 0
@@ -64,6 +65,8 @@ class createVCAAggregate():
         self.loadVCAsFiles()
         # Loop over master ids as reference
         for id, row in self.dfVca.iterrows():
+            proposerAss = self.dfMasterProposers.loc[id]
+            self.dfVca.loc[id, self.opt.challengeCol] = str(proposerAss[self.opt.challengeCol])
             # Loop over all vca files
             for filesIdx, vcaDf in enumerate(self.vcasData):
                 if (id in vcaDf.index):
@@ -449,12 +452,13 @@ class createVCAAggregate():
                     # where vCAs are proposers
                     if (
                         (ass[self.opt.assessorCol] != vca['ca_id']) and
-                        (proposal["category"] not in vca["campaigns"])
+                        (proposal["category"] not in vca["campaigns_as_proposers"])
                     ):
+                        toInclude.append(row)
 
                     # Exclude reviews for self reviews and for challenges
                     #if (ass[self.opt.assessorCol] != vca['ca_id']):
-                        toInclude.append(row)
+                    #   toInclude.append(row)
             print("Imported file {}".format(filename))
             return pd.DataFrame(toInclude)
         else:
