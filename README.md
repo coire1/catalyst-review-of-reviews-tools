@@ -1,23 +1,41 @@
 # Project Catalyst Review of Reviews Tools
 
-This project is simple collection of scripts to speed-up the "Review of
-Reviews" stage in Project Catalyst and integrate the set of principles
-described in [THE YELLOW AND RED CARD THING](https://docs.google.com/document/d/1D04NRH1U_ZhAqaA3Gdk0WZqDcYkXoPZpC_15t5QyX14).
-This is an attempt to facilitate and improve the decision-making process for
-vCAs who are reviewing CA reviews in Fund 4.
+This project is simple collection of scripts to speed-up the "QA Assess Stage"
+in Project Catalyst. The first iterations of the scripts were based on the
+"Yellow & Red document" prepared by the community and the process is now
+simplified and included into the Catalyst process.
 
-In Fund 4, as for Fund 3, this process is based on Google Sheet and these
-tools interact with it using `gspread`.
+In Fund 4 and 3, this process was based on Google Sheet and these
+tools interacted with it using `gspread`.
+
+From Fund 5 to the current (Fund 7) the process is still based on Google Sheets,
+but various tools were developed by the community to interact with the CSV
+exports - hopefully in a couple of funds we'll get rid of Google Sheets
+completely.
 
 ## Disclaimer
-This is not the most elegant script collection in the world. It was just a quick
-a dirt development to get the tool ready for fund4.
+This is not the most elegant script collection in the world.
+Things may break and they differ greatly between iterations, so it's possible
+that some part of the code it's just a quick fix for something that changed.
 
 ## Process
 
 Steps of the process:
-1. We get the Ideascale export and add columns with the Y&R cards criteria + an
-"open" criteria (with a rationale). We autoflag blank assessments (`createProposerDocument.py`).
+1. We get the Ideascale Assessments export, we create a new format for
+assessments (grouping them by assessor) and we autoflag blank assessments.
+In this step the assessments made by a CA who is also a proposer in the same
+challenge will be discarded (`createProposerDocument.py`).
+In order to perform the exclusion it is necessary to have 2 files:
+  - `proposals.json` => JSON list of all proposals with `id`, `category`,
+  `title`, `url`
+  - `users.json` => JSON list of all users with `id` (the anonymized id assigned
+     to the user), `email`, `proposals` (list), `campaigns` (list), `userName`.
+     Due to limitation in the IdeaScale platform that allows to receive only the
+     list of users with the proposals ids, it is possible to use the script
+     `updateUsersChallenges.py` to add the `campaigns` to each user
+     (`proposals.json` file is required).
+After the execution of `createProposerDocument.py` a Master File for proposers
+with all the assessments will be created on GDrive.
 2. Proposers mark the criteria column to flag an assessment (and add a rationale for the "open" criteria).
 Proposers can only flag assessments for their own proposal.
 3. We make an external file with a profanity/similarity check to be used by vCA as reference (to be verified if it is possible with a great number of assessments, the similarity part is really heavy)
