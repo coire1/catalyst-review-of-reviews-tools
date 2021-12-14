@@ -18,11 +18,14 @@ class CreateProposerDocument():
         proposals = json.load(open('proposals.json'))
         users = json.load(open('users.json'))
         for id, row in proposersDf.iterrows():
+            # Get the user and proposal for each assessment from the json files.
             ass = row.to_dict()
             user = next((item for item in users if item["id"] == ass[self.opt.assessorCol]), None)
             proposal = next((item for item in proposals if item["id"] == ass[self.opt.proposalIdCol]), None)
             if (user and proposal):
                 if (proposal["category"] in user["campaigns"]):
+                    # Exclude the assessment if the assessment proposal category
+                    # is in the user "campaigns" => challenges
                     toExclude.append(ass)
                 else:
                     toInclude.append(ass)
@@ -66,8 +69,8 @@ class CreateProposerDocument():
 
         print('Format columns...')
         widths = [
-            ('A', 30), ('B', 100), ('C:D', 150), ('E', 100), ('F:G', 50), 
-            ('H', 300), ('I', 30), ('J', 300), ('K', 30), ('L', 300), 
+            ('A', 30), ('B', 100), ('C:D', 150), ('E', 100), ('F:G', 50),
+            ('H', 300), ('I', 30), ('J', 300), ('K', 30), ('L', 300),
             ('M:O', 30), ('P', 250)
         ]
 
