@@ -17,12 +17,6 @@ class GspreadWrapper():
         self.utils = Utils()
         self.gc = gspread.service_account(filename=self.opt.gSheetAuthFile)
 
-        self.infringementsColumns = [
-            self.opt.profanityCol, self.opt.nonConstructiveCol,
-            self.opt.scoreCol, self.opt.copyCol, self.opt.incompleteReadingCol,
-            self.opt.notRelatedCol, self.opt.otherCol
-        ]
-
     def loadAssessmentsFile(self):
         self.assessmentsDoc = self.gc.open_by_key(self.opt.originalExportFromIdeascale)
         self.assessmentsSheet = self.assessmentsDoc.worksheet(self.opt.assessmentsSheet)
@@ -81,21 +75,6 @@ class GspreadWrapper():
         self.vcaDoc = self.gc.open_by_key(self.opt.VCAMasterFile)
         self.vcaSheet = self.vcaDoc.worksheet('Community Advisors')
         self.dfVcaAssessors = pd.DataFrame(self.vcaSheet.get_all_records())
-
-
-    def checkMarks(self, row):
-        res = False
-        for col in self.infringementsColumns:
-            if (row[col].strip() != ''):
-                # If General check also the rationale
-                if (col == self.opt.otherCol):
-                    if (row[self.opt.otherRationaleCol].strip() != ''):
-                        res = True
-                else:
-                    res = True
-        if (row[self.opt.topQualityCol].strip() != ''):
-            res = (not res)
-        return res
 
     def createDoc(self, name):
         print('Create new document...')

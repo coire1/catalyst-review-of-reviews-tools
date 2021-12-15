@@ -127,12 +127,6 @@ class createProposersAggregate():
             return 1
         return 0
 
-    def badFeedback(self, row):
-        for col in self.infringementsColumns:
-            if (self.checkIfMarked(row, col) > 0):
-                return True
-        return False
-
     def badValid(self, row):
         if (
             (self.checkIfMarked(row, self.opt.notValidCol) == 1) and
