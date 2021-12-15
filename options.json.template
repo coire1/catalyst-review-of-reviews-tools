@@ -1,8 +1,7 @@
 {
-  "accountEmail": "coire1@gmail.com",
+  "accountEmail": "",
   "gSheetAuthFile": "gsheet-accounts/service_account.json",
-  "allowedBlankPerAssessor": 1,
-  "cardLimit": 0.5,
+  "allowedBlankPerAssessor": 0.2,
   "minimumVCA": 1,
   "criteriaGroups": [
     {
@@ -16,7 +15,6 @@
       "4": "Auditability"
     }
   ],
-  "assessmentsCacheFilename": "assessements",
   "assessmentsSheet": "Assessments",
   "proposalKeyCol": "Idea Title",
   "proposalIdCol": "proposal_id",
@@ -30,23 +28,9 @@
   "assessmentCol": "Assessment Note",
   "assessorCol": "Assessor",
   "proposerMarkCol": "Proposer Mark",
-  "topQualityCol": "Constructive Feedback",
-  "fairCol": "Acceptable",
-  "abstainCol": "Abstain",
-  "strictCol": "Strict",
-  "lenientCol": "Lenient",
   "blankCol": "Blank",
-  "profanityCol": "Offense / Profanity",
-  "nonConstructiveCol": "Non Constructive Feedback",
-  "scoreCol": "Score doesn't match",
-  "copyCol": "Copy",
-  "incompleteReadingCol": "Incomplete Reading",
   "notRelatedCol": "Not Related",
-  "otherCol": "General Infraction",
-  "otherRationaleCol": "Not valid: rationale",
   "noVCAReviewsCol": "# of vCAs Reviews",
-  "yellowCardCol": "Yellow Card",
-  "redCardCol": "Red Card",
 
   "q0Col": "Impact / Alignment Note",
   "q0Rating": "Impact / Alignment Rating",
@@ -61,14 +45,12 @@
   "notValidRationaleCol": "Filtered Out: rationale",
   "proposersRationaleCol": "Proposer Not Valid rationale",
   "proposersMasterFile": "",
-  "proposersAggregateFileName": "Proposers Aggregated - Fund 6",
+  "proposersAggregateFileName": "Proposers Aggregated - Fund 7",
   "proposersAggregateFile": "",
 
-  "proposerDocumentName": "Proposers Master File - Fund6",
-  "manualDeletedAssessorsRecap": "",
+  "proposerDocumentName": "Proposers Master File - Fund 7",
   "originalExportFromIdeascale": "",
-  "proposersFile": "",
-  "VCAMasterFileName": "vCA Master File - Fund 6",
+  "VCAMasterFileName": "vCA Master File - Fund 7",
   "VCAMasterFile": "",
-  "VCAAggregateFileName": "vCA Aggregated - Fund 6"
+  "VCAAggregateFileName": "vCA Aggregated - Fund 7"
 }
