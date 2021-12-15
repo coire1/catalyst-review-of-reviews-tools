@@ -59,10 +59,13 @@ class createProposersAggregate():
                         # return False
 
                     if (self.isProposerFeedbackValid(locAss)):
-                        col = self.opt.notValidCol
-                        colVal = self.checkIfMarked(locAss, col)
+                        colVal = self.checkIfMarked(locAss, self.opt.notValidCol)
                         if (colVal > 0):
                             self.dfMasterProposers.loc[id, self.opt.proposerMarkCol] = self.dfMasterProposers.loc[id, self.opt.proposerMarkCol] + colVal
+                        ratioColVal = self.checkIfMarked(
+                            locAss, self.opt.notValidRationaleCol
+                        )
+                        if (ratioColVal > 0):
                             self.dfMasterProposers.loc[id, self.opt.proposersRationaleCol] = locAss[self.opt.notValidRationaleCol]
 
         self.dfMasterProposers[self.opt.assessmentsIdCol] = self.dfMasterProposers.index
@@ -71,7 +74,7 @@ class createProposersAggregate():
 
         # Print valid assessments
         assessmentsHeadings = [
-            self.opt.assessmentsIdCol,
+            self.opt.assessmentsIdCol, self.opt.challengeCol,
             self.opt.proposalKeyCol, self.opt.ideaURLCol, self.opt.assessorCol,
             self.opt.tripletIdCol, self.opt.proposalIdCol,
             self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
@@ -79,24 +82,24 @@ class createProposersAggregate():
             self.opt.proposerMarkCol, self.opt.proposersRationaleCol
         ]
         assessmentsWidths = [
-            ('A', 30), ('B:C', 150), ('D', 100), ('E:F', 40), ('G', 300),
-            ('H', 30), ('I', 300), ('J', 30), ('K', 300), ('L:N', 30),
-            ('O', 300)
+            ('A', 30), ('B:D', 150), ('E', 100), ('F:G', 40), ('H', 300),
+            ('I', 30), ('J', 300), ('K', 30), ('L', 300), ('M:0', 30),
+            ('P', 300)
         ]
         assessmentsFormats = [
             ('A', self.utils.counterFormat),
-            ('H', self.utils.counterFormat),
-            ('J', self.utils.counterFormat),
-            ('L', self.utils.counterFormat),
+            ('I', self.utils.counterFormat),
+            ('K', self.utils.counterFormat),
             ('M', self.utils.counterFormat),
-            ('A1:O1', self.utils.headingFormat),
-            ('M1:N1', self.utils.verticalHeadingFormat),
-            ('H1', self.utils.verticalHeadingFormat),
-            ('J1', self.utils.verticalHeadingFormat),
-            ('L1', self.utils.verticalHeadingFormat),
-            ('G2:G', self.utils.textFormat),
-            ('I2:I', self.utils.textFormat),
-            ('K2:K', self.utils.textFormat),
+            ('N', self.utils.counterFormat),
+            ('A1:P1', self.utils.headingFormat),
+            ('N1:O1', self.utils.verticalHeadingFormat),
+            ('I1', self.utils.verticalHeadingFormat),
+            ('K1', self.utils.verticalHeadingFormat),
+            ('M1', self.utils.verticalHeadingFormat),
+            ('H2:H', self.utils.textFormat),
+            ('J2:J', self.utils.textFormat),
+            ('L2:L', self.utils.textFormat),
         ]
 
         self.gspreadWrapper.createSheetFromDf(
