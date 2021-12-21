@@ -44,6 +44,7 @@
   "notValidAlternativeCol": "Not Valid",
   "notValidRationaleCol": "Filtered Out rationale or Feedback",
   "proposersRationaleCol": "Proposer Not Valid rationale or Feedback",
+  "vcaFeedbackCol": "vCA Feedback",
   "proposersMasterFile": "",
   "proposersAggregateFileName": "Proposers Aggregated - Fund 7",
   "proposersAggregateFile": "",
