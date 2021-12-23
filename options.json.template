@@ -43,7 +43,7 @@
   "notValidCol": "Filtered Out",
   "notValidAlternativeCol": "Not Valid",
   "notValidRationaleCol": "Filtered Out rationale or Feedback",
-  "proposersRationaleCol": "Proposer Not Valid rationale or Feedback",
+  "proposersRationaleCol": "Proposer Filtered Out rationale or Feedback",
   "vcaFeedbackCol": "vCA Feedback",
   "proposersMasterFile": "",
   "proposersAggregateFileName": "Proposers Aggregated - Fund 7",
@@ -53,5 +53,7 @@
   "originalExportFromIdeascale": "",
   "VCAMasterFileName": "vCA Master File - Fund 7",
   "VCAMasterFile": "",
-  "VCAAggregateFileName": "vCA Aggregated - Fund 7"
+  "VCAAggregateFileName": "vCA Aggregated - Fund 7",
+
+  "distinctChallenges": []
 }
