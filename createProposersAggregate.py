@@ -57,19 +57,20 @@ class createProposersAggregate():
                         fn = self.proposersFileList[filesIdx]
                         print("{} failed to pass the integrity test at id {}".format(fn, id))
                         # return False
-
-                    if (self.isProposerFeedbackValid(locAss)):
-                        colVal = self.checkIfMarked(locAss, self.opt.notValidCol)
-                        if (colVal > 0):
-                            self.dfMasterProposers.loc[id, self.opt.proposerMarkCol] = self.dfMasterProposers.loc[id, self.opt.proposerMarkCol] + colVal
-                        ratioColVal = self.checkIfMarked(
-                            locAss, self.opt.notValidRationaleCol
-                        )
-                        if (ratioColVal > 0):
-                            self.dfMasterProposers.loc[id, self.opt.proposersRationaleCol] = locAss[self.opt.notValidRationaleCol]
+                    if integrity:
+                        if (self.isProposerFeedbackValid(locAss)):
+                            colVal = self.checkIfMarked(locAss, self.opt.notValidCol)
+                            if (colVal > 0):
+                                self.dfMasterProposers.loc[id, self.opt.proposerMarkCol] = self.dfMasterProposers.loc[id, self.opt.proposerMarkCol] + colVal
+                            ratioColVal = self.checkIfMarked(
+                                locAss, self.opt.notValidRationaleCol
+                            )
+                            if (ratioColVal > 0):
+                                self.dfMasterProposers.loc[id, self.opt.proposersRationaleCol] = locAss[self.opt.notValidRationaleCol]
 
         self.dfMasterProposers[self.opt.assessmentsIdCol] = self.dfMasterProposers.index
         self.dfMasterProposers.to_csv('cache/test-proposers-aggregate.csv')
+        return
         spreadsheet = self.gspreadWrapper.createDoc(self.opt.proposersAggregateFileName)
 
         # Print valid assessments
