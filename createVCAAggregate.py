@@ -24,6 +24,8 @@ class createVCAAggregate():
         self.excellentColumns = [self.opt.excellentCol]
         self.allColumns = self.badColumns + self.goodColumns + self.excellentColumns
 
+        self.dChallenges = self.opt.distinctChallenges
+
     def prepareBaseData(self):
         self.gspreadWrapper.getVCAMasterData()
         self.dfVca = self.gspreadWrapper.dfVca.set_index('id')
@@ -31,7 +33,7 @@ class createVCAAggregate():
         self.dfMasterProposers = self.gspreadWrapper.dfMasterProposers.set_index('id')
         # Set all counters to 0
         self.dfVca[self.opt.noVCAReviewsCol] = 0
-        self.dfVca[self.opt.challengeCol] = ''
+        # self.dfVca[self.opt.challengeCol] = ''
         for col in self.allColumns:
             self.dfVca[col] = 0
             self.dfVca['Result ' + col] = 0
@@ -66,7 +68,7 @@ class createVCAAggregate():
         # Loop over master ids as reference
         for id, row in self.dfVca.iterrows():
             proposerAss = self.dfMasterProposers.loc[id]
-            self.dfVca.loc[id, self.opt.challengeCol] = str(proposerAss[self.opt.challengeCol])
+            # self.dfVca.loc[id, self.opt.challengeCol] = str(proposerAss[self.opt.challengeCol])
             # Loop over all vca files
             for filesIdx, vcaDf in enumerate(self.vcasData):
                 if (id in vcaDf.index):
@@ -77,21 +79,24 @@ class createVCAAggregate():
                     single_vca = next((item for item in self.vcas if item['vca_file'] == vca_filename), None)
                     if (integrity is False):
                         print("{} failed to pass the integrity test at id {}".format(vca_fn, id))
-
-                    bad = self.badFeedback(locAss)
-                    good = self.goodFeedback(locAss)
-                    excellent = self.excellentFeedback(locAss)
-                    if (self.isVCAfeedbackValid(locAss, bad, good, excellent)):
-                        if (bad or good or excellent):
-                            if "No. of Reviews" in single_vca:
-                                single_vca['No. of Reviews'] = single_vca['No. of Reviews'] + 1
-                            else:
-                                single_vca['No. of Reviews'] = 1
-                            self.dfVca.loc[id, self.opt.noVCAReviewsCol] = self.dfVca.loc[id, self.opt.noVCAReviewsCol] + 1
-                        for col in self.allColumns:
-                            colVal = self.checkIfMarked(locAss, col)
-                            if (colVal > 0):
-                                self.dfVca.loc[id, col] = self.dfVca.loc[id, col] + colVal
+                    if integrity:
+                        bad = self.badFeedback(locAss)
+                        good = self.goodFeedback(locAss)
+                        excellent = self.excellentFeedback(locAss)
+                        if (self.isVCAfeedbackValid(locAss, bad, good, excellent)):
+                            if (bad or good or excellent):
+                                reviews_num_col = "No. of Reviews"
+                                if locAss[self.opt.challengeCol] in self.dChallenges:
+                                    reviews_num_col = reviews_num_col + " " + locAss[self.opt.challengeCol]
+                                if reviews_num_col in single_vca:
+                                    single_vca[reviews_num_col] = single_vca[reviews_num_col] + 1
+                                else:
+                                    single_vca[reviews_num_col] = 1
+                                self.dfVca.loc[id, self.opt.noVCAReviewsCol] = self.dfVca.loc[id, self.opt.noVCAReviewsCol] + 1
+                            for col in self.allColumns:
+                                colVal = self.checkIfMarked(locAss, col)
+                                if (colVal > 0):
+                                    self.dfVca.loc[id, col] = self.dfVca.loc[id, col] + colVal
 
             (bad, good, excellent) = self.calculateOutcome(self.dfVca.loc[id])
             self.dfVca.loc[id, 'Result ' + self.opt.notValidCol] = bad
@@ -119,6 +124,19 @@ class createVCAAggregate():
         validAssessments[self.opt.excellentCol] = validAssessments['Result ' + self.opt.excellentCol]
         validAssessments[self.opt.goodCol] = validAssessments['Result ' + self.opt.goodCol]
         validAssessments[self.opt.notValidCol] = validAssessments['Result ' + self.opt.notValidCol]
+
+        # Create a structured list for
+        # dChallenges add the filtered df.
+        validNatives = []
+        for native in self.dChallenges:
+            nativeEl = {
+                "title": native,
+                "validAssessments": validAssessments[(validAssessments[self.opt.challengeCol] == native)]
+            }
+            validNatives.append(nativeEl)
+
+        # Create a general valid df without valid from dChallenges
+        generalValidAssessments = validAssessments[(~validAssessments[self.opt.challengeCol].isin(self.dChallenges))]
 
         blanksAssessments = pd.DataFrame(self.dfMasterProposers).copy()
         blanksAssessments.fillna('', inplace=True)
@@ -243,12 +261,22 @@ class createVCAAggregate():
 
         self.gspreadWrapper.createSheetFromDf(
             spreadsheet,
-            'Valid Assessments',
-            validAssessments,
+            'Valid Assessments (excluding Natives)',
+            generalValidAssessments,
             validHeadings,
             columnWidths=validWidths,
             formats=validFormats
         )
+        for native in validNatives:
+            self.gspreadWrapper.createSheetFromDf(
+                spreadsheet,
+                "Valid Assessments ({})".format(native["title"]),
+                native["validAssessments"],
+                validHeadings,
+                columnWidths=validWidths,
+                formats=validFormats
+            )
+
 
         proposalsWidths = [
             ('A', 300), ('B', 60), ('C', 60)
@@ -321,11 +349,15 @@ class createVCAAggregate():
             ('A1:C1', self.utils.headingFormat),
         ]
 
+        vcaCols = ['name', 'vca_link', 'No. of Reviews']
+        for nativeChallenge in self.dChallenges:
+            reviews_num_col = "No. of Reviews " + nativeChallenge
+            vcaCols.append(reviews_num_col)
         self.gspreadWrapper.createSheetFromDf(
             spreadsheet,
             'Veteran Community Advisors',
             vcaList,
-            ['name', 'vca_link', 'No. of Reviews'],
+            vcaCols,
             columnWidths=vcasWidths,
             formats=vcasFormats
         )
