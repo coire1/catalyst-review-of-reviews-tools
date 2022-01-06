@@ -55,5 +55,6 @@
   "VCAMasterFile": "",
   "VCAAggregateFileName": "vCA Aggregated - Fund 7",
 
-  "distinctChallenges": []
+  "distinctChallenges": [],
+  "vcaResponses": ""
 }
