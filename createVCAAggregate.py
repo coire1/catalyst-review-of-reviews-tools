@@ -163,7 +163,15 @@ class createVCAAggregate():
             [self.opt.q0Rating, self.opt.q1Rating, self.opt.q2Rating]
         ].mean(axis=1)
         finalProposals = validAssessmentsRatings.groupby([self.opt.proposalIdCol, self.opt.proposalKeyCol], as_index=False)['Rating Given'].mean().round(2)
+        for oProposal in self.proposals:
+            if not (finalProposals[self.opt.proposalIdCol] == oProposal['id']).any():
+                propToAdd = {}
+                propToAdd[self.opt.proposalIdCol] = oProposal['id']
+                propToAdd[self.opt.proposalKeyCol] = oProposal['title']
+                propToAdd['Rating Given'] = 0
+                finalProposals = finalProposals.append(propToAdd, ignore_index=True)
 
+        finalProposals.to_csv('cache/final-proposals.csv')
         # Create list of VCAs
         vcaList = pd.DataFrame(self.vcas)
         vcaList.fillna(0, inplace=True)
