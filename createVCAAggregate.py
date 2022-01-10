@@ -453,13 +453,16 @@ class createVCAAggregate():
         good = ''
         excellent = ''
         tot = row[self.opt.noVCAReviewsCol]
-        if (tot >= self.opt.minimumVCA):
-            if (row[self.opt.excellentCol] > (tot/2)):
-                excellent = 'x'
-            elif (row[self.opt.notValidCol] >= (tot/2)):
-                bad = 'x'
-            else:
-                good = 'x'
+        if row[self.opt.assessorCol] in self.opt.bannedCAs:
+            bad = 'x'
+        else:
+            if (tot >= self.opt.minimumVCA):
+                if (row[self.opt.excellentCol] > (tot/2)):
+                    excellent = 'x'
+                elif (row[self.opt.notValidCol] >= (tot/2)):
+                    bad = 'x'
+                else:
+                    good = 'x'
         return (bad, good, excellent)
 
     def goodFeedback(self, row):

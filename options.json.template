@@ -56,5 +56,6 @@
   "VCAAggregateFileName": "vCA Aggregated - Fund 7",
 
   "distinctChallenges": [],
-  "vcaResponses": ""
+  "vcaResponses": "",
+  "bannedCAs": []
 }
