@@ -163,12 +163,15 @@ class createVCAAggregate():
             [self.opt.q0Rating, self.opt.q1Rating, self.opt.q2Rating]
         ].mean(axis=1)
         finalProposals = validAssessmentsRatings.groupby([self.opt.proposalIdCol, self.opt.proposalKeyCol], as_index=False)['Rating Given'].mean().round(2)
+        fProposalsNoAssessments = validAssessmentsRatings.groupby([self.opt.proposalIdCol, self.opt.proposalKeyCol], as_index=False).size().reset_index()
+        finalProposals['No. Assessments'] = fProposalsNoAssessments['size']
         for oProposal in self.proposals:
             if not (finalProposals[self.opt.proposalIdCol] == oProposal['id']).any():
                 propToAdd = {}
                 propToAdd[self.opt.proposalIdCol] = oProposal['id']
                 propToAdd[self.opt.proposalKeyCol] = oProposal['title']
                 propToAdd['Rating Given'] = 0
+                propToAdd['No. Assessments'] = 0
                 finalProposals = finalProposals.append(propToAdd, ignore_index=True)
 
         finalProposals.to_csv('cache/final-proposals.csv')
@@ -287,13 +290,14 @@ class createVCAAggregate():
 
 
         proposalsWidths = [
-            ('A', 300), ('B', 60), ('C', 60)
+            ('A', 300), ('B', 60), ('C:D', 60)
         ]
         proposalsFormats = [
             ('B:B', self.utils.counterFormat),
             ('C:C', self.utils.counterFormat),
+            ('D:D', self.utils.counterFormat),
             ('A:A', self.utils.noteFormat),
-            ('A1:C1', self.utils.headingFormat),
+            ('A1:D1', self.utils.headingFormat),
             ('B1', self.utils.verticalHeadingFormat),
             ('C1', self.utils.verticalHeadingFormat),
         ]
@@ -302,7 +306,7 @@ class createVCAAggregate():
             spreadsheet,
             'Proposals scores',
             finalProposals,
-            [self.opt.proposalKeyCol, self.opt.proposalIdCol, 'Rating Given'],
+            [self.opt.proposalKeyCol, self.opt.proposalIdCol, 'Rating Given', 'No. Assessments'],
             columnWidths=proposalsWidths,
             formats=proposalsFormats
         )
