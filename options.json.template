@@ -57,5 +57,6 @@
 
   "distinctChallenges": [],
   "vcaResponses": "",
-  "bannedCAs": []
+  "bannedCAs": [],
+  "flashResponses": ""
 }
