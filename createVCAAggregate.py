@@ -162,14 +162,21 @@ class createVCAAggregate():
         validAssessmentsRatings['Rating Given'] = validAssessmentsRatings[
             [self.opt.q0Rating, self.opt.q1Rating, self.opt.q2Rating]
         ].mean(axis=1)
-        finalProposals = validAssessmentsRatings.groupby([self.opt.proposalIdCol, self.opt.proposalKeyCol], as_index=False)['Rating Given'].mean().round(2)
-        fProposalsNoAssessments = validAssessmentsRatings.groupby([self.opt.proposalIdCol, self.opt.proposalKeyCol], as_index=False).size().reset_index()
+        finalProposals = validAssessmentsRatings.groupby(
+            [self.opt.proposalIdCol, self.opt.proposalKeyCol, self.opt.challengeCol],
+            as_index=False
+        )['Rating Given'].mean().round(2)
+        fProposalsNoAssessments = validAssessmentsRatings.groupby(
+            [self.opt.proposalIdCol, self.opt.proposalKeyCol, self.opt.challengeCol],
+            as_index=False
+        ).size().reset_index()
         finalProposals['No. Assessments'] = fProposalsNoAssessments['size']
         for oProposal in self.proposals:
             if not (finalProposals[self.opt.proposalIdCol] == oProposal['id']).any():
                 propToAdd = {}
                 propToAdd[self.opt.proposalIdCol] = oProposal['id']
                 propToAdd[self.opt.proposalKeyCol] = oProposal['title']
+                propToAdd[self.opt.challengeCol] = ''
                 propToAdd['Rating Given'] = 0
                 propToAdd['No. Assessments'] = 0
                 finalProposals = finalProposals.append(propToAdd, ignore_index=True)
@@ -237,37 +244,37 @@ class createVCAAggregate():
 
         # Print valid assessments
         validHeadings = [
-            self.opt.assessmentsIdCol, self.opt.proposalKeyCol,
+            self.opt.assessmentsIdCol, self.opt.proposalKeyCol, self.opt.challengeCol,
             self.opt.proposalIdCol, self.opt.ideaURLCol, self.opt.assessorCol,
             self.opt.q0Col, self.opt.q0Rating, self.opt.q1Col, self.opt.q1Rating,
             self.opt.q2Col, self.opt.q2Rating, self.opt.excellentCol,
             self.opt.goodCol
         ]
         validWidths = [
-            ('A', 30), ('B', 120), ('C', 30), ('D', 120), ('E', 100),
-            ('F', 300), ('G', 30), ('H', 300), ('I', 30), ('J', 300),
-            ('K:M', 30)
+            ('A', 30), ('B', 120), ('C', 120), ('D', 30), ('E', 120), ('F', 100),
+            ('G', 300), ('H', 30), ('I', 300), ('J', 30), ('K', 300),
+            ('L:N', 30)
         ]
         validFormats = [
-            ('A1:M1', self.utils.headingFormat),
+            ('A1:N1', self.utils.headingFormat),
             ('A2:A', self.utils.counterFormat),
-            ('C2:C', self.utils.counterFormat),
-            ('G2:G', self.utils.counterFormat),
-            ('I2:I', self.utils.counterFormat),
-            ('K2:K', self.utils.counterFormat),
+            ('D2:D', self.utils.counterFormat),
+            ('H2:H', self.utils.counterFormat),
+            ('J2:J', self.utils.counterFormat),
             ('L2:L', self.utils.counterFormat),
             ('M2:M', self.utils.counterFormat),
-            ('F:F', self.utils.noteFormat),
-            ('H:H', self.utils.noteFormat),
-            ('J:J', self.utils.noteFormat),
+            ('N2:N', self.utils.counterFormat),
+            ('G:G', self.utils.noteFormat),
+            ('I:I', self.utils.noteFormat),
+            ('K:K', self.utils.noteFormat),
             ('A1:A1', self.utils.verticalHeadingFormat),
-            ('C1:C1', self.utils.verticalHeadingFormat),
-            ('G1:G1', self.utils.verticalHeadingFormat),
-            ('I1:I1', self.utils.verticalHeadingFormat),
-            ('K1:K1', self.utils.verticalHeadingFormat),
-            ('L1:M1', self.utils.verticalHeadingFormat),
-            ('L2:L', self.utils.greenFormat),
-            ('M2:M', self.utils.greenFormat)
+            ('D1:D1', self.utils.verticalHeadingFormat),
+            ('H1:H1', self.utils.verticalHeadingFormat),
+            ('J1:J1', self.utils.verticalHeadingFormat),
+            ('L1:L1', self.utils.verticalHeadingFormat),
+            ('L1:N1', self.utils.verticalHeadingFormat),
+            ('M2:M', self.utils.greenFormat),
+            ('N2:N', self.utils.greenFormat)
         ]
 
         self.gspreadWrapper.createSheetFromDf(
@@ -290,23 +297,23 @@ class createVCAAggregate():
 
 
         proposalsWidths = [
-            ('A', 300), ('B', 60), ('C:D', 60)
+            ('A', 300), ('B', 60), ('C', 300), ('D:E', 60)
         ]
         proposalsFormats = [
             ('B:B', self.utils.counterFormat),
-            ('C:C', self.utils.counterFormat),
             ('D:D', self.utils.counterFormat),
+            ('E:E', self.utils.counterFormat),
             ('A:A', self.utils.noteFormat),
-            ('A1:D1', self.utils.headingFormat),
-            ('B1', self.utils.verticalHeadingFormat),
+            ('A1:E1', self.utils.headingFormat),
             ('C1', self.utils.verticalHeadingFormat),
+            ('D1', self.utils.verticalHeadingFormat),
         ]
 
         self.gspreadWrapper.createSheetFromDf(
             spreadsheet,
             'Proposals scores',
             finalProposals,
-            [self.opt.proposalKeyCol, self.opt.proposalIdCol, 'Rating Given', 'No. Assessments'],
+            [self.opt.proposalKeyCol, self.opt.proposalIdCol, self.opt.challengeCol, 'Rating Given', 'No. Assessments'],
             columnWidths=proposalsWidths,
             formats=proposalsFormats
         )
